@@ -1,0 +1,19 @@
+FROM node:24 as builder
+WORKDIR /app
+COPY . .
+RUN npm install
+#This will create the folder /dist
+RUN npm run build
+
+
+#----------- stage 1 complete ------------
+
+#stage 2 Runner used ro run the application from builder stage
+
+FROM node:24-alpine AS runner
+WORKDIR /app
+COPY package.json .
+RUN npm install -g vite
+COPY --from=builder /app/dist ./dist
+EXPOSE 4173
+CMD ["npm","run","preview","--","--host","0.0.0.0","--port","4173"]
