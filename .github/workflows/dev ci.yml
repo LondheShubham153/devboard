@@ -1,4 +1,4 @@
-# goal build the image for devboard frontened and push to dockerhub
+# goal build the image for devboard frontened and push to dockerhub check
 name: CI
 
 on:
