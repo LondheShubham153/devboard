@@ -23,8 +23,8 @@ jobs:
       - name: Build and Push
         uses: docker/build-push-action@v7
         with:
-          context: .
+  
           push: true
-          tags: username/myapp:latest
+          tags: ${{ vars.DOCKERHUB_USERNAME }}/Devboard-fe-master:latest
 
       
