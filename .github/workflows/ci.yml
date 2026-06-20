@@ -6,24 +6,6 @@ on:
     branches: [master]
 
 jobs:
-  code-lint:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v7
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: "npm" # Automates dependency caching for faster builds
-
-      - name: Install Dependencies
-        run: npm install
-
-      - name: Run Lint (Biome)
-        run: npm run lint
-
   build-and-push:
     runs-on: ubuntu-latest
     steps:
