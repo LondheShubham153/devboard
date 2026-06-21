@@ -7,7 +7,8 @@
     "dev":     "vite",
     "build":   "vite build",
     "preview": "vite preview",
-    "test":    "vitest run --reporter=verbose"
+    "test":    "vitest run --reporter=verbose",
+     "lint": "biome check ."
   },
   "dependencies": {
     "@tabler/icons-react": "^3.17.0",
