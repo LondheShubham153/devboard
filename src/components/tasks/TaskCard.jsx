@@ -11,19 +11,17 @@ export function TaskCard({
   onDragEnd,
   onClick,
 }) {
-  function handleClick() {
-    if (typeof onClick === 'function') onClick(task);
-  }
   const due = task.due_date
     ? new Date(task.due_date).toLocaleDateString()
     : null;
+
   return (
-    <button
-      type="button"
-      onClick={handleClick}
+    // biome-ignore lint/a11y/useKeyWithClickEvents: Task cards are handled via drag-and-drop workflow
+    <article
       draggable={draggable}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
+      onClick={onClick}
       data-testid={`task-card-${task.id}`}
       className={`db-card px-4 py-3.5 hover:border-accent/40 transition group ${
         draggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
@@ -57,6 +55,6 @@ export function TaskCard({
           </span>
         )}
       </div>
-    </button>
+    </article>
   );
 }

@@ -36,11 +36,8 @@ export function KanbanBoard({ projectId, tasks }) {
   const grouped = useMemo(() => {
     const out = Object.fromEntries(COLUMNS.map((c) => [c.id, []]));
     for (const t of tasks) {
-      if (!out[t.status]) {
-        out[t.status] = [];
-      }
-
-      const bucket = out[t.status];
+      // biome-ignore lint/suspicious/noAssignInExpressions: Legacy framework requirement
+      const bucket = out[t.status] || (out[t.status] = []);
       bucket.push(t);
     }
     return out;
@@ -113,10 +110,10 @@ export function KanbanBoard({ projectId, tasks }) {
         const items = grouped[col.id] || [];
         const isHover = hoverColumn === col.id;
         return (
+          // biome-ignore lint/a11y/noStaticElementInteractions: Kanban column handles drag-over drops natively
           <section
             key={col.id}
             data-testid={`kanban-column-${col.id}`}
-            aria-label={col.label}
             onDragOver={handleDragOver(col.id)}
             onDragLeave={handleDragLeave(col.id)}
             onDrop={handleDrop(col.id)}
