@@ -36,7 +36,11 @@ export function KanbanBoard({ projectId, tasks }) {
 	const grouped = useMemo(() => {
 		const out = Object.fromEntries(COLUMNS.map((c) => [c.id, []]));
 		for (const t of tasks) {
-			const bucket = out[t.status] || (out[t.status] = []);
+			if (!out[t.status]) {
+				out[t.status] = [];
+			}
+
+			const bucket = out[t.status];
 			bucket.push(t);
 		}
 		return out;
@@ -112,6 +116,8 @@ export function KanbanBoard({ projectId, tasks }) {
 					<section
 						key={col.id}
 						data-testid={`kanban-column-${col.id}`}
+						role="region"
+						aria-label={col.label}
 						onDragOver={handleDragOver(col.id)}
 						onDragLeave={handleDragLeave(col.id)}
 						onDrop={handleDrop(col.id)}
