@@ -88,3 +88,9 @@ jobs:
           context: ./backend
           push: true
           tags: ${{ vars.DOCKERHUB_USERNAME }}/devboard-backend-advanced:latest
+
+  # cd.yml's deploy job will be triggered here
+  deploy:
+    needs: [frontend,backend]
+    uses: ./.github/workflows/cd.yml
+    secrets: inherit
