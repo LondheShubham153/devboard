@@ -1,9 +1,0 @@
-{
-  "$schema": "https://biomejs.dev/schemas/2.5.0/schema.json",
-  "files": {
-    "experimentalScannerIgnores": ["src/styles/**", "public/**/*.svg"]
-  },
-  "linter": {
-    "enabled": true
-  }
-}
