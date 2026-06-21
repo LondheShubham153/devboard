@@ -1,25 +1,16 @@
-# Pin a specific Node version (never a floating `latest`).
-FROM node:20-alpine
-
-# Run as a dedicated non-root user, not root.
-RUN addgroup -S app && adduser -S -G app app
-
+# Stage 1 — build the app into static files
+FROM node:20-alpine AS build
 WORKDIR /app
-
-# Install deps first for better layer caching (re-runs only when deps change).
 COPY package*.json ./
 RUN npm ci
-
-# Copy the source and build the production bundle into /dist.
 COPY . .
 RUN npm run build
 
-# Hand ownership to the non-root user, then drop privileges.
-RUN chown -R app:app /app
-USER app
-
-# Vite preview serves the built bundle on this port.
+# Stage 2 — small image that only serves the build (no nginx)
+FROM node:20-alpine
+WORKDIR /app
+RUN npm install -g vite@5 && npm cache clean --force
+COPY --from=build /app/dist ./dist
+COPY vite.preview.config.js ./vite.config.js
 EXPOSE 4173
-
-# 0.0.0.0 so the server is reachable from outside the container.
-CMD ["npm", "run", "preview", "--", "--host", "0.0.0.0", "--port", "4173"]
+CMD ["vite", "preview", "--host", "0.0.0.0", "--port", "4173"]
