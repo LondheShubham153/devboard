@@ -43,8 +43,41 @@ jobs:
           file: ./frontend/Dockerfile.multistage
           push: true
           tags: ${{ vars.DOCKERHUB_USERNAME }}/devboard-frontend:latest
-  #backend:
-    #runs-on: ubuntu-latest
-    #steps:
-      #- name: Checkout code
-      #  uses: actions/checkout@v7
+  backend:
+    runs-on: ubuntu-latest    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+        
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.23'
+          cache: 'go.mod'
+          chache-dependency-path: backend/go.sum
+
+      - name: Run Go Formatter
+        run: go fmt
+        working-directory: backend
+      
+      - name: Run Go Vet
+        run: go vet 
+        working-directory: backend
+
+      - name: Run Tests
+        run: npm run test
+        working-directory: backend
+
+      - name: Docker Setup [Login]
+        uses: docker/login-action@v4
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Docker Build and Push
+        uses: docker/build-push-action@v7
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ vars.DOCKERHUB_USERNAME }}/devboard-backend:latest
