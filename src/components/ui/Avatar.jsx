@@ -1,4 +1,11 @@
-const PALETTE = ['#7F77DD', '#639922', '#BA7517', '#E24B4A', '#3C3489', '#5F5E5A'];
+const PALETTE = [
+  '#7F77DD',
+  '#639922',
+  '#BA7517',
+  '#E24B4A',
+  '#3C3489',
+  '#5F5E5A',
+];
 
 function initials(name = '') {
   return name

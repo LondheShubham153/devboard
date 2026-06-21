@@ -1,13 +1,13 @@
-import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { StatusBadge, PriorityBadge } from './Badge';
+import { describe, expect, it } from 'vitest';
+import { PriorityBadge, StatusBadge } from './Badge';
 
 describe('StatusBadge', () => {
   it.each([
-    ['done',        'done'],
+    ['done', 'done'],
     ['in_progress', 'in progress'],
-    ['blocked',     'blocked'],
-    ['todo',        'todo'],
+    ['blocked', 'blocked'],
+    ['todo', 'todo'],
   ])('renders the %s status with the right label', (status, label) => {
     render(<StatusBadge status={status} />);
     expect(screen.getByText(label)).toBeInTheDocument();
@@ -22,9 +22,9 @@ describe('StatusBadge', () => {
 
 describe('PriorityBadge', () => {
   it.each([
-    ['high',   'high'],
+    ['high', 'high'],
     ['medium', 'medium'],
-    ['low',    'low'],
+    ['low', 'low'],
   ])('renders %s priority', (priority, label) => {
     render(<PriorityBadge priority={priority} />);
     expect(screen.getByText(label)).toBeInTheDocument();

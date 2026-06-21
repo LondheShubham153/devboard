@@ -21,7 +21,7 @@ export default {
         },
         success: { DEFAULT: '#639922', bg: '#EAF3DE' },
         warning: { DEFAULT: '#BA7517', bg: '#FAEEDA' },
-        danger:  { DEFAULT: '#E24B4A', bg: '#FCEBEB' },
+        danger: { DEFAULT: '#E24B4A', bg: '#FCEBEB' },
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],

@@ -1,12 +1,14 @@
+import { IconMoon, IconSun } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
-import { IconSun, IconMoon } from '@tabler/icons-react';
 
 const KEY = 'devboard.theme';
 
 function readPreferred() {
   const stored = localStorage.getItem(KEY);
   if (stored === 'dark' || stored === 'light') return stored;
-  return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  return window.matchMedia?.('(prefers-color-scheme: dark)').matches
+    ? 'dark'
+    : 'light';
 }
 
 export function ThemeToggle() {
@@ -30,7 +32,11 @@ export function ThemeToggle() {
         hover:bg-ink-50 dark:hover:bg-white/5 hover:text-ink-950 dark:hover:text-white
         transition"
     >
-      {theme === 'dark' ? <IconSun size={15} stroke={1.6} /> : <IconMoon size={15} stroke={1.6} />}
+      {theme === 'dark' ? (
+        <IconSun size={15} stroke={1.6} />
+      ) : (
+        <IconMoon size={15} stroke={1.6} />
+      )}
     </button>
   );
 }

@@ -1,14 +1,17 @@
-import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
 import {
-  IconPlus, IconDatabase, IconBolt,
-  IconLayoutKanban, IconList,
+  IconBolt,
+  IconDatabase,
+  IconLayoutKanban,
+  IconList,
+  IconPlus,
 } from '@tabler/icons-react';
-import { useTasks } from '../hooks/useTasks';
-import { Button } from '../components/ui/Button';
-import { TaskList } from '../components/tasks/TaskList';
-import { TaskCreateModal } from '../components/tasks/TaskCreateModal';
+import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { KanbanBoard } from '../components/tasks/KanbanBoard';
+import { TaskCreateModal } from '../components/tasks/TaskCreateModal';
+import { TaskList } from '../components/tasks/TaskList';
+import { Button } from '../components/ui/Button';
+import { useTasks } from '../hooks/useTasks';
 
 const STATUSES = ['all', 'todo', 'in_progress', 'blocked', 'done'];
 const VIEW_KEY = 'devboard.view';
@@ -19,16 +22,19 @@ export function ProjectPage() {
   const { data, isLoading } = useTasks(projectId);
   const [filter, setFilter] = useState('all');
   const [modal, setModal] = useState(false);
-  const [view, setView] = useState(() => localStorage.getItem(VIEW_KEY) || 'board');
+  const [view, setView] = useState(
+    () => localStorage.getItem(VIEW_KEY) || 'board',
+  );
 
   useEffect(() => {
     localStorage.setItem(VIEW_KEY, view);
   }, [view]);
 
   const allTasks = data?.tasks || [];
-  const tasks = view === 'list'
-    ? allTasks.filter((t) => filter === 'all' ? true : t.status === filter)
-    : allTasks;
+  const tasks =
+    view === 'list'
+      ? allTasks.filter((t) => (filter === 'all' ? true : t.status === filter))
+      : allTasks;
   const source = data?.source;
 
   return (
@@ -62,25 +68,30 @@ export function ProjectPage() {
           <nav className="flex items-center gap-1 text-[12px]">
             {STATUSES.map((s) => (
               <button
+                type="button"
                 key={s}
                 onClick={() => setFilter(s)}
                 className={`px-2.5 h-7 rounded transition font-medium
-                  ${filter === s
-                    ? 'bg-accent text-white'
-                    : 'text-ink-600 dark:text-ink-400 hover:bg-ink-50 dark:hover:bg-white/5'}`}
+                  ${
+                    filter === s
+                      ? 'bg-accent text-white'
+                      : 'text-ink-600 dark:text-ink-400 hover:bg-ink-50 dark:hover:bg-white/5'
+                  }`}
               >
                 {s === 'in_progress' ? 'in progress' : s}
               </button>
             ))}
           </nav>
-        ) : <div />}
+        ) : (
+          <div />
+        )}
 
         <SegmentedToggle
           value={view}
           onChange={setView}
           options={[
             { v: 'board', label: 'Board', icon: IconLayoutKanban },
-            { v: 'list',  label: 'List',  icon: IconList },
+            { v: 'list', label: 'List', icon: IconList },
           ]}
         />
       </div>
@@ -88,7 +99,9 @@ export function ProjectPage() {
       {/* content */}
       <div className="db-rise db-rise-2">
         {isLoading ? (
-          <div className="db-card p-6 text-center text-ink-400 text-[13px]">Loading…</div>
+          <div className="db-card p-6 text-center text-ink-400 text-[13px]">
+            Loading…
+          </div>
         ) : view === 'board' ? (
           <KanbanBoard projectId={projectId} tasks={tasks} />
         ) : (
@@ -96,7 +109,11 @@ export function ProjectPage() {
         )}
       </div>
 
-      <TaskCreateModal projectId={projectId} open={modal} onClose={() => setModal(false)} />
+      <TaskCreateModal
+        projectId={projectId}
+        open={modal}
+        onClose={() => setModal(false)}
+      />
     </div>
   );
 }
@@ -107,11 +124,17 @@ function SourceBadge({ source }) {
     <span
       title="Where this task list came from on the last fetch"
       className={`db-chip font-mono
-        ${isCache
-          ? 'bg-accent-subtle dark:bg-accent/15 text-accent-muted dark:text-accent'
-          : 'bg-success-bg text-[#3B6D11]'}`}
+        ${
+          isCache
+            ? 'bg-accent-subtle dark:bg-accent/15 text-accent-muted dark:text-accent'
+            : 'bg-success-bg text-[#3B6D11]'
+        }`}
     >
-      {isCache ? <IconBolt size={11} stroke={2} /> : <IconDatabase size={11} stroke={2} />}
+      {isCache ? (
+        <IconBolt size={11} stroke={2} />
+      ) : (
+        <IconDatabase size={11} stroke={2} />
+      )}
       source: {source}
     </span>
   );
@@ -130,15 +153,18 @@ function SegmentedToggle({ value, onChange, options }) {
         const active = value === opt.v;
         return (
           <button
+            type="button"
             key={opt.v}
             role="tab"
             aria-selected={active}
             data-testid={`view-toggle-${opt.v}`}
             onClick={() => onChange(opt.v)}
             className={`inline-flex items-center gap-1.5 px-2.5 h-7 rounded text-[12px] font-medium transition
-              ${active
-                ? 'bg-white dark:bg-[#1c1c1f] text-ink-950 dark:text-white shadow-[0_1px_0_0_rgba(0,0,0,0.04)]'
-                : 'text-ink-600 dark:text-ink-400 hover:text-ink-950 dark:hover:text-white'}`}
+              ${
+                active
+                  ? 'bg-white dark:bg-[#1c1c1f] text-ink-950 dark:text-white shadow-[0_1px_0_0_rgba(0,0,0,0.04)]'
+                  : 'text-ink-600 dark:text-ink-400 hover:text-ink-950 dark:hover:text-white'
+              }`}
           >
             <opt.icon size={13} stroke={1.7} /> {opt.label}
           </button>

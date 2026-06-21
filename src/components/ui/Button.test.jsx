@@ -1,19 +1,21 @@
-import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { describe, expect, it, vi } from 'vitest';
 import { Button } from './Button';
 
 describe('Button', () => {
   it('renders children', () => {
     render(<Button>Click me</Button>);
-    expect(screen.getByRole('button', { name: 'Click me' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Click me' }),
+    ).toBeInTheDocument();
   });
 
   it.each([
-    ['primary',   'db-btn-primary'],
+    ['primary', 'db-btn-primary'],
     ['secondary', 'db-btn-secondary'],
-    ['ghost',     'db-btn-ghost'],
-    ['danger',    'db-btn-danger'],
+    ['ghost', 'db-btn-ghost'],
+    ['danger', 'db-btn-danger'],
   ])('applies the %s variant class', (variant, cls) => {
     render(<Button variant={variant}>x</Button>);
     expect(screen.getByRole('button')).toHaveClass(cls);

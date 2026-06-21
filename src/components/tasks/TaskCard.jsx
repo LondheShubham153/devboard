@@ -1,6 +1,6 @@
-import { IconClock, IconUser, IconGripVertical } from '@tabler/icons-react';
-import { StatusBadge, PriorityBadge } from '../ui/Badge';
+import { IconClock, IconGripVertical, IconUser } from '@tabler/icons-react';
 import { Avatar } from '../ui/Avatar';
+import { PriorityBadge, StatusBadge } from '../ui/Badge';
 
 export function TaskCard({
   task,
@@ -11,8 +11,12 @@ export function TaskCard({
   onDragEnd,
   onClick,
 }) {
-  const due = task.due_date ? new Date(task.due_date).toLocaleDateString() : null;
+  const due = task.due_date
+    ? new Date(task.due_date).toLocaleDateString()
+    : null;
+
   return (
+    // biome-ignore lint/a11y/useKeyWithClickEvents: Task cards are handled via drag-and-drop workflow
     <article
       draggable={draggable}
       onDragStart={onDragStart}
@@ -32,7 +36,9 @@ export function TaskCard({
           />
         )}
         <span className="font-mono text-[11px] text-ink-400">#{task.id}</span>
-        <h3 className="text-[14px] font-medium flex-1 min-w-0 truncate">{task.title}</h3>
+        <h3 className="text-[14px] font-medium flex-1 min-w-0 truncate">
+          {task.title}
+        </h3>
         {showStatus && <StatusBadge status={task.status} />}
         {assigneeName && <Avatar name={assigneeName} size={22} />}
       </div>

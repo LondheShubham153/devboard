@@ -4,14 +4,19 @@
 export function Logo({ compact = false, iconOnly = false }) {
   const iconSize = compact ? 26 : 36;
   const wordmarkSize = compact ? 15 : 20;
-  const tile = iconSize / 2 - 2;
+  const _tile = iconSize / 2 - 2;
   const inner = (
-    <svg width={iconSize} height={iconSize} viewBox="0 0 32 32" aria-hidden="true">
+    <svg
+      width={iconSize}
+      height={iconSize}
+      viewBox="0 0 32 32"
+      aria-hidden="true"
+    >
       <rect width="32" height="32" rx="8" fill="#7F77DD" />
       <g fill="#ffffff">
-        <rect x="6"  y="6"  width="9" height="9" rx="2" fillOpacity="0.95" />
-        <rect x="17" y="6"  width="9" height="9" rx="2" fillOpacity="0.6" />
-        <rect x="6"  y="17" width="9" height="9" rx="2" fillOpacity="0.6" />
+        <rect x="6" y="6" width="9" height="9" rx="2" fillOpacity="0.95" />
+        <rect x="17" y="6" width="9" height="9" rx="2" fillOpacity="0.6" />
+        <rect x="6" y="17" width="9" height="9" rx="2" fillOpacity="0.6" />
         <rect x="17" y="17" width="9" height="9" rx="2" fillOpacity="0.35" />
       </g>
     </svg>

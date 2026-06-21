@@ -1,8 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
 import {
-  IconChevronDown, IconLogout, IconUserCircle, IconSettings,
-  IconKeyboard, IconExternalLink,
+  IconChevronDown,
+  IconExternalLink,
+  IconKeyboard,
+  IconLogout,
+  IconSettings,
+  IconUserCircle,
 } from '@tabler/icons-react';
+import { useEffect, useRef, useState } from 'react';
 import { Avatar } from '../ui/Avatar';
 
 // No auth on the fundamentals branch — the profile shows a static demo user.
@@ -47,9 +51,11 @@ export function ProfileMenu() {
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
         className={`h-8 inline-flex items-center gap-1.5 pl-0.5 pr-1.5 rounded-full transition
-          ${open
-            ? 'bg-ink-50 dark:bg-white/10'
-            : 'hover:bg-ink-50 dark:hover:bg-white/5'}`}
+          ${
+            open
+              ? 'bg-ink-50 dark:bg-white/10'
+              : 'hover:bg-ink-50 dark:hover:bg-white/5'
+          }`}
       >
         <span className="relative">
           <Avatar name={user.name} size={26} />
@@ -77,7 +83,9 @@ export function ProfileMenu() {
           <div className="px-3 py-3 flex items-center gap-2.5 border-b border-ink-100 dark:border-white/10">
             <Avatar name={user.name} size={32} />
             <div className="min-w-0">
-              <div className="text-[13px] font-medium leading-tight truncate">{user.name}</div>
+              <div className="text-[13px] font-medium leading-tight truncate">
+                {user.name}
+              </div>
               <div className="text-[11px] text-ink-400 font-mono leading-tight truncate">
                 {user.email}
               </div>
@@ -86,8 +94,16 @@ export function ProfileMenu() {
 
           {/* menu items */}
           <nav className="py-1 text-[13px]">
-            <MenuItem icon={IconUserCircle} label="View profile" onClick={() => setOpen(false)} />
-            <MenuItem icon={IconSettings}   label="Settings"      onClick={() => setOpen(false)} />
+            <MenuItem
+              icon={IconUserCircle}
+              label="View profile"
+              onClick={() => setOpen(false)}
+            />
+            <MenuItem
+              icon={IconSettings}
+              label="Settings"
+              onClick={() => setOpen(false)}
+            />
             <MenuItem
               icon={IconKeyboard}
               label="Keyboard shortcuts"
@@ -98,7 +114,13 @@ export function ProfileMenu() {
             <MenuItem
               icon={IconExternalLink}
               label="GitHub repo"
-              onClick={() => { setOpen(false); window.open('https://github.com/LondheShubham153/devboard', '_blank'); }}
+              onClick={() => {
+                setOpen(false);
+                window.open(
+                  'https://github.com/LondheShubham153/devboard',
+                  '_blank',
+                );
+              }}
             />
             <div className="my-1 h-px bg-ink-100 dark:bg-white/10" />
             <MenuItem
@@ -122,9 +144,11 @@ function MenuItem({ icon: Icon, label, onClick, meta, danger }) {
       type="button"
       onClick={onClick}
       className={`w-full px-3 h-8 inline-flex items-center gap-2.5 text-left transition
-        ${danger
-          ? 'text-[#A32D2D] hover:bg-danger-bg'
-          : 'hover:bg-ink-50 dark:hover:bg-white/5'}`}
+        ${
+          danger
+            ? 'text-[#A32D2D] hover:bg-danger-bg'
+            : 'hover:bg-ink-50 dark:hover:bg-white/5'
+        }`}
     >
       <Icon size={14} stroke={1.6} className="shrink-0" />
       <span className="flex-1 truncate">{label}</span>
@@ -135,8 +159,10 @@ function MenuItem({ icon: Icon, label, onClick, meta, danger }) {
 
 function KeyHint({ k }) {
   return (
-    <span className="font-mono text-[10px] text-ink-400 px-1.5 h-[18px] inline-flex items-center
-      rounded border border-ink-100 dark:border-white/10 bg-ink-50 dark:bg-white/5">
+    <span
+      className="font-mono text-[10px] text-ink-400 px-1.5 h-[18px] inline-flex items-center
+      rounded border border-ink-100 dark:border-white/10 bg-ink-50 dark:bg-white/5"
+    >
       {k}
     </span>
   );
