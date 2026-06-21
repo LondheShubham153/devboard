@@ -19,7 +19,7 @@ There's no login and no AI here on purpose. The whole point is to *see how the
 pieces connect*.
 
 ---
-# trigger k liye 
+# trigger k liye  k liye he bhai 
 ## What you need
 
 - **Docker** (with Docker Compose, which comes with Docker Desktop).
