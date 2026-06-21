@@ -8,7 +8,7 @@ on:
         branches: 
             - advanced
     workflow_dispatch:
-        
+
 jobs:
     deploy:
         if: github.event.workflow_run.conclusion == 'success'
@@ -28,5 +28,14 @@ jobs:
             
             - name: Deploy the container to Docker Compose
               run: |
-                docker compose pull
-                docker compose up -d
+                if command -v docker-compose >/dev/null 2>&1; then
+                  docker-compose pull
+                  docker-compose up -d
+                elif docker compose version >/dev/null 2>&1; then
+                  docker compose pull
+                  docker compose up -d
+                else
+                  echo 'Docker Compose is not installed on this runner.'
+                  docker --help
+                  exit 1
+                fi
