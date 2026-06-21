@@ -1,9 +1,13 @@
-import { useLocation, useMatch, Link } from 'react-router-dom';
-import { IconBell, IconChevronRight, IconCircleFilled } from '@tabler/icons-react';
+import {
+  IconBell,
+  IconChevronRight,
+  IconCircleFilled,
+} from '@tabler/icons-react';
+import { Link, useLocation, useMatch } from 'react-router-dom';
+import { useProjects } from '../../hooks/useTasks';
 import { CommandBar } from './CommandBar';
 import { ProfileMenu } from './ProfileMenu';
 import { ThemeToggle } from './ThemeToggle';
-import { useProjects } from '../../hooks/useTasks';
 
 /**
  * Three-zone topbar:
@@ -16,8 +20,10 @@ import { useProjects } from '../../hooks/useTasks';
  */
 export function Topbar() {
   return (
-    <header className="h-14 px-4 flex items-center gap-4 border-b border-ink-100/80 dark:border-white/10
-                       bg-white/85 dark:bg-[#1c1c1f]/85 backdrop-blur-md sticky top-0 z-20">
+    <header
+      className="h-14 px-4 flex items-center gap-4 border-b border-ink-100/80 dark:border-white/10
+                       bg-white/85 dark:bg-[#1c1c1f]/85 backdrop-blur-md sticky top-0 z-20"
+    >
       {/* LEFT: breadcrumb */}
       <div className="hidden md:flex items-center min-w-0 flex-1">
         <Breadcrumb />
@@ -40,11 +46,13 @@ function Breadcrumb() {
   const location = useLocation();
   const projectMatch = useMatch('/projects/:id/*');
   const { data } = useProjects();
-  const project = data?.projects?.find((p) => String(p.id) === projectMatch?.params?.id);
+  const project = data?.projects?.find(
+    (p) => String(p.id) === projectMatch?.params?.id,
+  );
 
-  const onAI      = location.pathname.endsWith('/ai');
+  const onAI = location.pathname.endsWith('/ai');
   const onProject = !!projectMatch;
-  const onRoot    = location.pathname === '/';
+  const onRoot = location.pathname === '/';
 
   return (
     <nav className="flex items-center gap-1.5 text-[13px] min-w-0">
@@ -56,13 +64,23 @@ function Breadcrumb() {
       </Link>
       {onRoot && (
         <>
-          <IconChevronRight size={12} stroke={2} className="text-ink-400 shrink-0" />
-          <span className="text-ink-600 dark:text-ink-400 truncate">Dashboard</span>
+          <IconChevronRight
+            size={12}
+            stroke={2}
+            className="text-ink-400 shrink-0"
+          />
+          <span className="text-ink-600 dark:text-ink-400 truncate">
+            Dashboard
+          </span>
         </>
       )}
       {onProject && (
         <>
-          <IconChevronRight size={12} stroke={2} className="text-ink-400 shrink-0" />
+          <IconChevronRight
+            size={12}
+            stroke={2}
+            className="text-ink-400 shrink-0"
+          />
           <Link
             to={`/projects/${projectMatch.params.id}`}
             className="text-ink-600 dark:text-ink-400 hover:text-ink-950 dark:hover:text-white transition truncate"
@@ -73,8 +91,14 @@ function Breadcrumb() {
       )}
       {onAI && (
         <>
-          <IconChevronRight size={12} stroke={2} className="text-ink-400 shrink-0" />
-          <span className="text-ink-950 dark:text-white truncate">AI assistant</span>
+          <IconChevronRight
+            size={12}
+            stroke={2}
+            className="text-ink-400 shrink-0"
+          />
+          <span className="text-ink-950 dark:text-white truncate">
+            AI assistant
+          </span>
         </>
       )}
     </nav>
@@ -91,7 +115,10 @@ function RightCluster() {
     >
       <NotificationsBell />
       <ThemeToggle />
-      <span aria-hidden className="mx-0.5 h-5 w-px bg-ink-100 dark:bg-white/10" />
+      <span
+        aria-hidden
+        className="mx-0.5 h-5 w-px bg-ink-100 dark:bg-white/10"
+      />
       <ProfileMenu />
     </div>
   );

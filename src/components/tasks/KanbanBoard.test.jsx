@@ -6,9 +6,9 @@
  *   - the optimistic cache update repositions the card before the server replies
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { KanbanBoard } from './KanbanBoard';
 
 // useUpdateTask wraps a useMutation — we replace it with a spy that records
@@ -19,11 +19,11 @@ vi.mock('../../hooks/useTasks', () => ({
 }));
 
 const TASKS = [
-  { id: 1, title: 'Wire TLS',     status: 'done',        priority: 'high'   },
-  { id: 2, title: 'JWT auth',     status: 'done',        priority: 'high'   },
-  { id: 3, title: 'Cache aside',  status: 'in_progress', priority: 'medium' },
-  { id: 4, title: 'gRPC search',  status: 'blocked',     priority: 'medium' },
-  { id: 5, title: 'AI streaming', status: 'todo',        priority: 'high'   },
+  { id: 1, title: 'Wire TLS', status: 'done', priority: 'high' },
+  { id: 2, title: 'JWT auth', status: 'done', priority: 'high' },
+  { id: 3, title: 'Cache aside', status: 'in_progress', priority: 'medium' },
+  { id: 4, title: 'gRPC search', status: 'blocked', priority: 'medium' },
+  { id: 5, title: 'AI streaming', status: 'todo', priority: 'high' },
 ];
 
 function setup(tasks = TASKS) {
@@ -94,9 +94,9 @@ describe('KanbanBoard', () => {
     };
 
     fireEvent.dragStart(card, { dataTransfer });
-    fireEvent.dragOver(donCol,  { dataTransfer });
-    fireEvent.drop(donCol,      { dataTransfer });
-    fireEvent.dragEnd(card,     { dataTransfer });
+    fireEvent.dragOver(donCol, { dataTransfer });
+    fireEvent.drop(donCol, { dataTransfer });
+    fireEvent.dragEnd(card, { dataTransfer });
 
     expect(mutateSpy).toHaveBeenCalledTimes(1);
     const [payload] = mutateSpy.mock.calls[0];
@@ -109,10 +109,13 @@ describe('KanbanBoard', () => {
     const todoCol = screen.getByTestId('kanban-column-todo');
 
     const dataTransfer = {
-      effectAllowed: '', dropEffect: '', setData: vi.fn(), getData: () => '5',
+      effectAllowed: '',
+      dropEffect: '',
+      setData: vi.fn(),
+      getData: () => '5',
     };
     fireEvent.dragStart(card, { dataTransfer });
-    fireEvent.drop(todoCol,   { dataTransfer });
+    fireEvent.drop(todoCol, { dataTransfer });
 
     expect(mutateSpy).not.toHaveBeenCalled();
   });
@@ -123,12 +126,15 @@ describe('KanbanBoard', () => {
     const card = screen.getByTestId('task-card-4'); // blocked: gRPC search
     const inProgCol = screen.getByTestId('kanban-column-in_progress');
     const dataTransfer = {
-      effectAllowed: '', dropEffect: '', setData: vi.fn(), getData: () => '4',
+      effectAllowed: '',
+      dropEffect: '',
+      setData: vi.fn(),
+      getData: () => '4',
     };
 
-    fireEvent.dragStart(card,    { dataTransfer });
-    fireEvent.dragOver(inProgCol,{ dataTransfer });
-    fireEvent.drop(inProgCol,    { dataTransfer });
+    fireEvent.dragStart(card, { dataTransfer });
+    fireEvent.dragOver(inProgCol, { dataTransfer });
+    fireEvent.drop(inProgCol, { dataTransfer });
 
     const cached = qc.getQueryData(['tasks', 1]);
     const moved = cached.tasks.find((t) => t.id === 4);

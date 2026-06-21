@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { listProjects, listTasks, createTask, updateTask } from '../mock/store';
+import { createTask, listProjects, listTasks, updateTask } from '../mock/store';
 
 // On the fundamentals branch these hooks read from the in-memory mock store
 // (src/mock/store.js) instead of the network. The component-facing API is

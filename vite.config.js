@@ -1,5 +1,5 @@
-import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vite';
 
 // Fundamentals build is UI-only — no backend, no proxy. Data comes from the
 // in-memory mock store (src/mock/store.js).

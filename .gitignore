@@ -1,5 +1,17 @@
+# node
 node_modules/
 dist/
+.vite/
+
+# go
+/backend/devboard-backend
+
+# env — keep .env local; the committed template is .env.example
+.env
+
+# misc
 .DS_Store
 *.local
-.vite/
+
+# claude's personal scratch notes (local only)
+CLAUDE.md

@@ -7,8 +7,14 @@ export function Input({ label, error, className = '', id, ...rest }) {
           {label}
         </span>
       )}
-      <input id={reactId} className={`db-input ${error ? 'border-danger' : ''} ${className}`} {...rest} />
-      {error && <span className="block mt-1 text-[12px] text-danger">{error}</span>}
+      <input
+        id={reactId}
+        className={`db-input ${error ? 'border-danger' : ''} ${className}`}
+        {...rest}
+      />
+      {error && (
+        <span className="block mt-1 text-[12px] text-danger">{error}</span>
+      )}
     </label>
   );
 }

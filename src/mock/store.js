@@ -26,16 +26,106 @@ const projects = [
 ];
 
 let tasks = [
-  { id: 1, project_id: 1, title: 'Design the task schema',        description: 'projects, tasks, statuses', status: 'done',        priority: 'high',   assignee_id: 1, due_date: '2026-05-05' },
-  { id: 2, project_id: 1, title: 'Build the kanban board',        description: 'drag and drop columns',     status: 'in_progress', priority: 'high',   assignee_id: 2, due_date: '2026-06-18' },
-  { id: 3, project_id: 1, title: 'Wire up the dashboard hero',    description: 'velocity + chip stats',     status: 'in_progress', priority: 'medium', assignee_id: 1, due_date: '2026-06-20' },
-  { id: 4, project_id: 1, title: 'Add the command bar (⌘K)',      description: 'global search',             status: 'todo',        priority: 'medium', assignee_id: 3, due_date: '2026-06-25' },
-  { id: 5, project_id: 1, title: 'Dark mode polish',              description: 'grain + gradients',         status: 'todo',        priority: 'low',    assignee_id: 2, due_date: null },
-  { id: 6, project_id: 1, title: 'Fix flaky avatar colors',       description: 'hash collision on initials', status: 'blocked',     priority: 'high',   assignee_id: 1, due_date: '2026-06-15' },
-  { id: 7, project_id: 1, title: 'Write component tests',         description: 'Vitest + testing-library',  status: 'todo',        priority: 'medium', assignee_id: 3, due_date: null },
-  { id: 8, project_id: 1, title: 'Ship the v1 release',           description: 'tag and announce',          status: 'todo',        priority: 'high',   assignee_id: 1, due_date: '2026-06-30' },
-  { id: 9, project_id: 2, title: 'Draft the launch blog post',    description: '',                          status: 'in_progress', priority: 'medium', assignee_id: 2, due_date: '2026-06-22' },
-  { id: 10, project_id: 2, title: 'Hero illustration',            description: '',                          status: 'todo',        priority: 'low',    assignee_id: 3, due_date: null },
+  {
+    id: 1,
+    project_id: 1,
+    title: 'Design the task schema',
+    description: 'projects, tasks, statuses',
+    status: 'done',
+    priority: 'high',
+    assignee_id: 1,
+    due_date: '2026-05-05',
+  },
+  {
+    id: 2,
+    project_id: 1,
+    title: 'Build the kanban board',
+    description: 'drag and drop columns',
+    status: 'in_progress',
+    priority: 'high',
+    assignee_id: 2,
+    due_date: '2026-06-18',
+  },
+  {
+    id: 3,
+    project_id: 1,
+    title: 'Wire up the dashboard hero',
+    description: 'velocity + chip stats',
+    status: 'in_progress',
+    priority: 'medium',
+    assignee_id: 1,
+    due_date: '2026-06-20',
+  },
+  {
+    id: 4,
+    project_id: 1,
+    title: 'Add the command bar (⌘K)',
+    description: 'global search',
+    status: 'todo',
+    priority: 'medium',
+    assignee_id: 3,
+    due_date: '2026-06-25',
+  },
+  {
+    id: 5,
+    project_id: 1,
+    title: 'Dark mode polish',
+    description: 'grain + gradients',
+    status: 'todo',
+    priority: 'low',
+    assignee_id: 2,
+    due_date: null,
+  },
+  {
+    id: 6,
+    project_id: 1,
+    title: 'Fix flaky avatar colors',
+    description: 'hash collision on initials',
+    status: 'blocked',
+    priority: 'high',
+    assignee_id: 1,
+    due_date: '2026-06-15',
+  },
+  {
+    id: 7,
+    project_id: 1,
+    title: 'Write component tests',
+    description: 'Vitest + testing-library',
+    status: 'todo',
+    priority: 'medium',
+    assignee_id: 3,
+    due_date: null,
+  },
+  {
+    id: 8,
+    project_id: 1,
+    title: 'Ship the v1 release',
+    description: 'tag and announce',
+    status: 'todo',
+    priority: 'high',
+    assignee_id: 1,
+    due_date: '2026-06-30',
+  },
+  {
+    id: 9,
+    project_id: 2,
+    title: 'Draft the launch blog post',
+    description: '',
+    status: 'in_progress',
+    priority: 'medium',
+    assignee_id: 2,
+    due_date: '2026-06-22',
+  },
+  {
+    id: 10,
+    project_id: 2,
+    title: 'Hero illustration',
+    description: '',
+    status: 'todo',
+    priority: 'low',
+    assignee_id: 3,
+    due_date: null,
+  },
 ];
 
 // Small artificial latency so loading states are visible, like a real fetch.
@@ -81,6 +171,11 @@ export function searchTasks(query, projectId) {
   const pid = Number(projectId);
   const results = tasks
     .filter((t) => t.project_id === pid && t.title.toLowerCase().includes(q))
-    .map((t) => ({ id: t.id, title: t.title, status: t.status, priority: t.priority }));
+    .map((t) => ({
+      id: t.id,
+      title: t.title,
+      status: t.status,
+      priority: t.priority,
+    }));
   return delay({ results });
 }

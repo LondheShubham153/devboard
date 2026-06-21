@@ -4,10 +4,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev":     "vite",
-    "build":   "vite build",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "dev": "vite",
+    "build": "vite build",
     "preview": "vite preview",
-    "test":    "vitest run --reporter=verbose"
+    "test": "vitest run --reporter=verbose"
   },
   "dependencies": {
     "@tabler/icons-react": "^3.17.0",
@@ -17,6 +19,7 @@
     "react-router-dom": "^6.26.2"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.5.0",
     "@testing-library/jest-dom": "^6.5.0",
     "@testing-library/react": "^16.0.1",
     "@testing-library/user-event": "^14.5.2",
