@@ -33,14 +33,14 @@ jobs:
 
       # from package.json (scripts)
       - name: run tests
-        run: npm run tests
+        run: npm run test
         working-directory: frontend
 
       - name: docker setup (login)
         uses: docker/login-action@v4
         with:
           username: ${{ vars.DOCKERHUB_USERNAME }}
-          password: ${{ vars.DOCKERHUB_TOKEN }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: docker build and push
         uses: docker/build-push-action@v7
@@ -80,7 +80,7 @@ jobs:
         uses: docker/login-action@v4
         with:
           username: ${{ vars.DOCKERHUB_USERNAME }}
-          password: ${{ vars.DOCKERHUB_TOKEN }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: docker build and push
         uses: docker/build-push-action@v7
