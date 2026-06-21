@@ -13,9 +13,9 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Setup Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 20
           cache: "npm" # Automates dependency caching for faster builds
 
       - name: Install Dependencies
