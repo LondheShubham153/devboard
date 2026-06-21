@@ -8,7 +8,7 @@
     "build":   "vite build",
     "preview": "vite preview",
     "lint":    "eslint src",
-    "test":    "vitest run --reporter=verbose"
+    "test":    "vitest run --config vite.config.js --reporter=verbose"
   },
   "dependencies": {
     "@tabler/icons-react": "^3.17.0",
