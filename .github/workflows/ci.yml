@@ -55,7 +55,7 @@ jobs:
         with:
           go-version: '1.23'
           cache: 'go.mod'
-          chache-dependency-path: backend/go.sum
+          chache-dependency-path: go.sum
 
       - name: Run Go Formatter
         run: go fmt
