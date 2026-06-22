@@ -33,7 +33,7 @@ jobs:
             - name: "Docker Build"
               uses: docker/build-push-action@v7
               with:
-                context: devboard\frontend\Dockerfile
+                context: ./frontend
                 push: true
                 tags: ${{ secrets.DOCKERHUB_USERNAME }}/devboard-frontend-master:latest
              
