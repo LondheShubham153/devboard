@@ -14,12 +14,16 @@ jobs:
                 node-version: '20'
                 cache: npm  
                 cache-dependency-path: frontend/package-lock.json 
+                
 
             - name: Install packages using npm
-              run: npm install --prefix frontend
+              run: npm install
+              working-directory: frontend
             - name: Run Linter
               run: npm run lint
+              working-directory: frontend
             - name: Run Tests
               run: npm test
+              working-directory: frontend
     
 #
