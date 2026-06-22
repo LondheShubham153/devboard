@@ -47,7 +47,8 @@ jobs:
                 go-version-file: 'backend/go.mod'
                 cache-dependency-path: backend/go.sum
             - name: verify dependencies
-              run: go mod tidy
+              run: |
+                   go mod tidy
                    git diff --exit-code
               working-directory: backend
             - name: Run Linter-format
