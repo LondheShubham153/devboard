@@ -4,12 +4,13 @@ on:
 jobs:
   first:
     strategy:
+      fail-fast: true
       matrix:
         exclude:
           - os: ubuntu-slim
-            python: 3.10
+            python: 3,10
         os: [ ubuntu-latest , ubuntu-slim ]
-        python: ['3.10', '3.11', '3.12']
+        python: ['3,10', '3.11', '3.12']
     runs-on: ${{ matrix.os }}
     steps:
       - name: installation
