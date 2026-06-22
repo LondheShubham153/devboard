@@ -4,7 +4,7 @@ on:
 jobs:
   first:
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         exclude:
           - os: ubuntu-slim
