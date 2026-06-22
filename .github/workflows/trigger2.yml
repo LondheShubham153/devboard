@@ -1,11 +1,12 @@
 name: trigger2
 on:
-  pull_request_review:
+  schedule:
+    - cron: "30 13 * * *"
 
 jobs:
   second:
     runs-on: ubuntu-slim
     steps:
       - name: t2
-        run: "review completed fro the pull request"
+        run: echo "scheduled job for the pull request"
     
