@@ -1,0 +1,11 @@
+name: trigger2
+on:
+  pull_request_review:
+
+jobs:
+  second:
+    runs-on: ubuntu-slim
+    steps:
+      - name: t2
+        run: "review completed fro the pull request"
+    
