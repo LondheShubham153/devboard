@@ -1,12 +1,15 @@
 name: trigger2
 on:
   schedule:
-    - cron: '10 13 * * *'
-
+    - cron: '15 13 * * *'
+  workflow_dispatch: 
 jobs:
   second:
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
     steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        
       - name: t2
         run: echo "scheduled job for the pull request"
     
