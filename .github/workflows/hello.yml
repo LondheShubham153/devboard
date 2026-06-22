@@ -12,7 +12,7 @@ jobs:
       - name: date
         run: date
       - name: branch-name
-        run:  echo " the branch is ${{ github.ref_name }}
+        run:  echo " the branch is ${{ github.ref_name }}"
       - name: files-in-repo
         run: ls -l
       - name: host-os
