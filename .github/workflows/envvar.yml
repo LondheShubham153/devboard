@@ -20,4 +20,7 @@ jobs:
         env:
           version: 1.0.0
         run: echo "this is testing for $appname $version"
-        
+      - name: details
+        run: echo "this is sha fo the commit ${{ github.sha }}"
+      - name: owner
+        run: echo "this is owner ${{ github.repository_owner }}"
