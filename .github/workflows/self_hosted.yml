@@ -1,16 +1,44 @@
 name: sfhosted
 on:
   workflow_dispatch:
+
 jobs:
   job1:
+    outputs:
+      out1: ${{ steps.step1.outputs.text }}
+      out2: ${{ steps.step2.outputs.text }}
+      out3: ${{ steps.step2.outputs.text }}
+      
     runs-on: [self-hosted, linux-practice]
     strategy:
       fail-fast: false
     steps:
+      - id: step1
+        run: |
+          version=$(docker --version)
+          echo "text=$version" >> "$GITHUB_OUTPUT"
+      - id: step2
+        run: |
+          version=$(whoami)
+          echo "text=$version" >> "$GITHUB_OUTPUT"
+      - id: step3
+        run: |
+          version=$(hostname)
+          echo "text=$version" >> "$GITHUB_OUTPUT"
+   
+  job2:
+    runs-on: ubuntu-latest
+    needs: job1
+    env:
+      d: ${{ needs.job1.outputs.out1 }}
+      w: ${{ needs.job1.outputs.out2 }}
+      h: ${{ needs.job1.outputs.out3 }}
+    steps:
       - name: docker
-        run: docker version
+        run: echo "$d"
       - name: whoami
-        run: whoami
+        run: echo "$w"
       - name: hostname
-        run: hostname
-  
+        run: echo "$h"
+      
+    
