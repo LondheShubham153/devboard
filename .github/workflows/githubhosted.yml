@@ -25,7 +25,7 @@ jobs:
       - name: git
         run: git version
       - name: python
-        run: python version
+        run: python --version
       - name: node
-        run: npm version
+        run: node -v
 
