@@ -5,9 +5,22 @@ on:
 jobs:
   job1:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
     steps:
-      - name: print
-        run: |
-          echo "${{ github.ref }}"
-          echo "${{ github.ref_name }}"
+      - name: step1
+        if: ${{ github.ref_name == 'master' }}
+        run: actions/checkout@v7
+      - id: step2
+        if: ${{ github.event_name == 'workflow-dispatch' }}
+        run: echo "this step fails"
+      - name: step3
+        if: failure()
+        run: echo "last step failed"
+      - name: step4
+        if: ${{ github.event_name == 'push' }}
+        run: echo "correct event"
+        
+        
+        
       
