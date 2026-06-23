@@ -11,4 +11,15 @@ jobs:
         runs-on: self-hosted
         steps:
             - name: checkout
-                uses: actions/checkout@v3
+              uses: actions/checkout@v3
+            - name: copy example to env
+              run: cp .env.example .env
+            - name: "Docker setup"
+              uses: docker/login-action@v3
+              with:
+                    username: ${{ secrets.DOCKERHUB_USERNAME }}
+                    password: ${{ secrets.DOCKER_TOKEN }} 
+            - name: "deploy docker-compose"
+              run: |
+                    docker-compose -f docker-compose.prod.yml pull
+                    docker-compose -f docker-compose.prod.yml up -d --remove-orphans
