@@ -2,6 +2,8 @@ name: multijob
 on:
   push: 
     branches: master
+    paths: .github/workflows/multijob.yml
+    
 
 jobs:
   code:
