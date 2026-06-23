@@ -1,7 +1,7 @@
 name: trigger2
 on:
   schedule:
-    - cron: '15 1 * * *'
+    - cron: '30 3 * * *'
   workflow_dispatch: 
 jobs:
   second:
