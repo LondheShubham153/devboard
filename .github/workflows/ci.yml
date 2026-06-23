@@ -18,12 +18,14 @@ jobs:
           node-version: 12
 
       - name: Install node.js dependecies
+        working-directory: frontend
         run: npm ci
 
       - name: Run linters
         uses: wearerequired/lint-action@v2
         with:
           eslint: true
+          eslint_dir: frontend
           prettier: true
         
   build-and-push:
