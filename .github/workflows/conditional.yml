@@ -21,7 +21,7 @@ jobs:
         if: failure()
         run: echo "last step failed"
       - name: step4
-        if: ${{ github.event_name == 'push' && success() }}
+        if: ${{ github.event_name == 'push' || success() }}
         run: echo "correct event"
         
         
