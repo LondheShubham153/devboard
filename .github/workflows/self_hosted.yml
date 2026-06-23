@@ -1,0 +1,14 @@
+name: sfhosted
+on:
+  workflow_dispatch:
+jobs:
+  job1:
+    runs-on: self-hosted
+    steps:
+      - name: docker
+        run: docker verison
+      - name: whoami
+        run: whoami
+      - name: hostname
+        run: hostname
+  
