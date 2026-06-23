@@ -1,5 +1,8 @@
 name: condition
 on:
+  push:
+    branches: master
+    paths: .github/workflows/conditional.yml
   workflow_dispatch:
 
 jobs:
@@ -12,7 +15,8 @@ jobs:
         if: ${{ github.ref_name == 'master' }}
         uses: actions/checkout@v7
       - id: step2
-        run: echo "${{ github.event_name }}"
+        if: ${{ github.event_name != 'workflow_dispatch' }}
+        run: exit 1
       - name: step3
         if: failure()
         run: echo "last step failed"
