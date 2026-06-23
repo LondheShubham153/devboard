@@ -7,14 +7,16 @@ jobs:
   job1:
     runs-on: ubuntu-latest
     outputs:
-      output1: ${{ steps.step1.outputs.test }}
-      output2: ${{ steps.step2.outputs.test }}
+      output1: ${{ steps.step2.outputs.test }}
+      output2: ${{ steps.step3.outputs.test }}
     steps:
       - id: step1
+        uses: actions/checkout@v7
+      - id: step2
         run: |
          myfile=$(ls -l)
          echo "test=$myfile" >> "$GITHUB_OUTPUT"
-      - id: step2
+      - id: step3
         run: echo "test=world" >> "$GITHUB_OUTPUT"
 
   job2:
