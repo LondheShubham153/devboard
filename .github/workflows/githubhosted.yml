@@ -15,3 +15,15 @@ jobs:
         run: hostname
       - name: current user
         run: whoami
+  job2:
+    runs-on: ubuntu-latest
+    steps:
+      - name: docker version
+        run: docker version
+      - name: git
+        run: git version
+      - name: python
+        run: python version
+      - name: node
+        run: npm version
+
