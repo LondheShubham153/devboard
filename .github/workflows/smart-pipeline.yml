@@ -6,12 +6,12 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - name: lint job
+      - name: lintjob
         run: "lint job running"
   test:
     runs-on: ubuntu-latest
     steps:
-      - name: test job
+      - name: testjob
         run: "test job is running"
   summary:
     runs-on: ubuntu-latest
