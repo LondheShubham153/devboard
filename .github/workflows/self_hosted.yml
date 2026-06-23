@@ -4,9 +4,11 @@ on:
 jobs:
   job1:
     runs-on: self-hosted
+    strategy:
+      fail-fast: false
     steps:
       - name: docker
-        run: docker verison
+        run: docker version
       - name: whoami
         run: whoami
       - name: hostname
