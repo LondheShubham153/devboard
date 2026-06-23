@@ -1,0 +1,13 @@
+name: condition
+on:
+  workflow_dispatch:
+
+jobs:
+  job1:
+    runs-on: ubuntu-latest
+    steps:
+      - name: print
+        run: |
+          echo "${{ github.ref }}"
+          echo "${{ github.ref_name }}"
+      
