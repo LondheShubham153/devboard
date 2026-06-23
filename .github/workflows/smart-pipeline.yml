@@ -1,7 +1,8 @@
 name: sp
 on:
   push:  
-    branches: [master, dev]
+    branches: 
+      - '**'
 
 jobs:
   lint:
