@@ -1,6 +1,8 @@
 name: sp
 on:
   push:  
+    branches: [master, dev]
+    paths: .github/workflows/
 
 jobs:
   lint:
