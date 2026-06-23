@@ -16,7 +16,7 @@ jobs:
       - name: files-in-repo
         run: ls -l
       - name: host-os
-        run: cat /etc/os-release
+        run: hostname
         
   
   
