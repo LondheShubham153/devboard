@@ -1,0 +1,17 @@
+name: ghhosted
+on: 
+  workflow_dispatch:
+
+jobs:
+  job1:
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, ubuntu-slim, ubuntu-24.04 ]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: OS name
+        run: cat /etc/os-release | grep "PRETTY_NAME"
+      - name: hostname
+        run: hostname
+      - name: current user
+        run: whoami
