@@ -4,14 +4,17 @@ on:
 
 jobs:
   lint:
+    runs-on: ubuntu-latest
     steps:
       - name: lint job
         run: "lint job running"
   test:
+    runs-on: ubuntu-latest
     steps:
       - name: test job
-        run: "test job is running
+        run: "test job is running"
   summary:
+    runs-on: ubuntu-latest
     needs: [ lint,test ]
     steps:
       - name: branch
