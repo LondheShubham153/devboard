@@ -26,6 +26,7 @@ jobs:
         with:
           eslint: true
           eslint_dir: frontend
+          prettier_dir: frontend
           prettier: true
         
   build-and-push:
