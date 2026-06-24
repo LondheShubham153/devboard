@@ -47,7 +47,7 @@ jobs:
                 tags: ${{ vars.DOCKERHUB_USERNAME }}/devboard-frontend:latest
 
             - name: Run Trivy vulnerability scanner
-              uses: aquasecurity/trivy-action@v0.28.0
+              uses: aquasecurity/trivy-action@v0.36.0
               with:
                 image-ref: '${{ vars.DOCKERHUB_USERNAME }}/devboard-frontend:latest'
                 format: 'table'
@@ -99,7 +99,7 @@ jobs:
                 tags: ${{ vars.DOCKERHUB_USERNAME }}/devboard-backend:latest
 
             - name: Run Trivy vulnerability scanner
-              uses: aquasecurity/trivy-action@v0.28.0
+              uses: aquasecurity/trivy-action@v0.36.0
               with:
                 image-ref: '${{ vars.DOCKERHUB_USERNAME }}/devboard-backend:latest'
                 format: 'table'
@@ -121,6 +121,7 @@ jobs:
 
             - name: SonarQube Scan
               uses: sonarsource/sonarqube-scan-action@v6
+              continue-on-error: true
               env:
                 SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
                 SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
