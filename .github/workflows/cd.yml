@@ -38,3 +38,4 @@ jobs:
                 target: 'http://${{ secrets.EC2_HOST }}:8080'
                 fail_action: false
                 allow_issue_writing: false
+                
