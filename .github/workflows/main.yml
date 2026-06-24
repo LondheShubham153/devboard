@@ -33,11 +33,9 @@ jobs:
           cd frontend
           npm install
           npm run build
+      - name: print
+        run: |
+          cd frontend/dist/
+          ls -l
           
-          
-      - name: upload
-        uses: actions/upload-artifact@v4
-        with:
-          name: main_file
-          path: frontend/dist/
         
