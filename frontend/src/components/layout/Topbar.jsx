@@ -52,7 +52,7 @@ function Breadcrumb() {
         to="/"
         className="font-medium text-ink-950 dark:text-white hover:text-accent transition shrink-0"
       >
-        DevBoard
+        DevBoard (DevSecOps Active)
       </Link>
       {onRoot && (
         <>
