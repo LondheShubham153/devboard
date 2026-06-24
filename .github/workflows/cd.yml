@@ -8,9 +8,6 @@ on:
 jobs:
     deploy:
         runs-on: ubuntu-latest
-        permissions:
-            issues: write
-            contents: read
         steps:
             - name: Code Checkout
               uses: actions/checkout@v7
