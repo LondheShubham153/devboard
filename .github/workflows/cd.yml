@@ -21,6 +21,9 @@ jobs:
                 key: ${{ secrets.EC2_SSH_KEY }}
                 script: |
                   cd ${{ secrets.EC2_TARGET_DIR || '/home/ubuntu/devboard' }}
+                  if [ ! -f .env ]; then
+                    cp .env.example .env
+                  fi
                   export DOCKERHUB_USERNAME="${{ vars.DOCKERHUB_USERNAME }}"
                   docker compose pull
                   docker compose up -d
