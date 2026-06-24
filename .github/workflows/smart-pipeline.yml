@@ -3,6 +3,7 @@ on:
   push:  
     branches: 
       - '**'
+    paths: .github/workflows/smart-pipeline.yml
 
 jobs:
   lint:
