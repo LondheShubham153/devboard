@@ -21,19 +21,6 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
-      - name: Debug SonarQube Metadata
-        run: |
-          echo "=== SONAR_HOST_URL ==="
-          echo "${SONAR_HOST_URL}" | sed 's/./& /g' # print with spaces to bypass secret masking for debug
-          echo "=== report-task.txt ==="
-          if [ -f .scannerwork/report-task.txt ]; then
-            cat .scannerwork/report-task.txt
-          else
-            echo "report-task.txt not found!"
-          fi
-        env:
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-
       - name: SonarQube Quality Gate Check
         uses: sonarsource/sonarqube-quality-gate-action@master
         with:
@@ -41,5 +28,4 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-          
           

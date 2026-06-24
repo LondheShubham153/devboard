@@ -26,4 +26,5 @@ jobs:
                   export DOCKERHUB_USERNAME="${{ vars.DOCKERHUB_USERNAME }}"
                   docker compose pull
                   docker compose up -d
+                  docker image prune -f
 
