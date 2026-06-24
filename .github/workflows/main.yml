@@ -8,25 +8,18 @@ jobs:
     steps:
       - name: code-chekcout
         uses: actions/checkout@v7
-      - name: install
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          
-      - name: cache-dependencies
+      - id: cache-d
         uses: actions/cache@v6
         with:
           path: ~/.npm
           key: ${{ runner.os }}-node-${{ hashFiles('**/frontend/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-node-
-          
-      - name: build
-        run: |
-          cd frontend
-          npm install
-          npm run build
-          
+      - name: install
+        if: steps.cache-d.outputs.cache-hit != 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20   
       - id: cache
         uses: actions/cache@v6
         with: 
@@ -34,6 +27,13 @@ jobs:
           key: ${{ runner.os }}-node-build-${{ hashFiles('**/frontend/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-node-build-
+      - name: build
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          cd frontend
+          npm install
+          npm run build
+          
           
       - name: upload
         uses: actions/upload-artifact@v4
