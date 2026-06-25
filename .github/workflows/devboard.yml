@@ -11,7 +11,7 @@ jobs:
         
       - name: setup-node-test-lint
         id: setup
-        uses: .github/actions/node-setup/
+        uses: ./.github/actions/node-setup/
         with:
           node-version: 20
           cache-dependency-path: frontend/package-lock.json
@@ -41,7 +41,7 @@ jobs:
       - name: code-checkout
         uses: actions/checkout@v7
       - name: go-setup-test
-        uses: .github/actions/node-setup/
+        uses: ./.github/actions/node-setup/
         with:
           go-version: 1.23
           go-version-file: backend/go.mod
