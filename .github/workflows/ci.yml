@@ -1,90 +1,42 @@
-# Goal - I have to Lint, Build, Test the code for Frontend & Backend
-# then Push the images to DockerHub 
+#Goal- I have a  build, push, test our devboard frontend and backend for code then push the images to Docker Hub
 name: CI
 
-on: 
+on:
     push:
         branches: [advanced]
 
 jobs:
-    frontend:
-        # Github runner
+    code-lint:
         runs-on: ubuntu-latest
         steps:
-            - name: Checkout Code
+            - name: code checkout
               uses: actions/checkout@v7
-
-            - name: Setup NodeJs
+            - name: setup nodejs
               uses: actions/setup-node@v6
               with:
                 node-version: '20'
                 cache: npm
-                cache-dependency-path: frontend/package-lock.json
+                cache-dependency-path: frontend\package-lock.json 
+            - name: Install npm packages
+              run: npm ci
             
-            - name: Install npm Packages
-              run: npm install
-              working-directory: frontend
-
-            - name: Run Linter
+            - name: run linter
               run: npm run lint
-              working-directory: frontend
+            - name: run tests
+              run: run npm test
 
-            - name: Run Tests
-              run: npm run test 
-              working-directory: frontend
-            
-            - name: Docker Setup [Login]
-              uses: docker/login-action@v4
-              with:
-                username: ${{ vars.DOCKERHUB_USERNAME }}
-                password: ${{ secrets.DOCKERHUB_TOKEN }}
+    #     frontend:
+    #         steps:
 
-            - name: Docker Build and Push
-              uses: docker/build-push-action@v7
-              with:
-                context: ./frontend
-                push: true
-                tags: ${{ vars.DOCKERHUB_USERNAME }}/devboard-frontend:latest
-                
-    backend:
-        # Github runner
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout Code
-              uses: actions/checkout@v7
+    #     code:
+    #     build:
+    #     test:
+    #     push:
+        
+    #  backend:
+    #     code:
+    #     build:
+    #     test:
+    #     push:
 
-            - name: Setup Go
-              uses: actions/setup-go@v6
-              with:
-                go-version: '1.23'
-                go-version-file: 'go.mod'
-                cache-dependency-path: go.sum
-            
-            - name: Run Go Formatter
-              run: go fmt
-              working-directory: backend
 
-            - name: Run Go Vet
-              run: go vet
-              working-directory: backend
-            
-            - name: Run Tests
-              run: go test 
-              working-directory: backend
-            
-            - name: Docker Setup [Login]
-              uses: docker/login-action@v4
-              with:
-                username: ${{ vars.DOCKERHUB_USERNAME }}
-                password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-            - name: Docker Build and Push
-              uses: docker/build-push-action@v7
-              with:
-                context: ./backend
-                push: true
-                tags: ${{ vars.DOCKERHUB_USERNAME }}/devboard-backend:latest
-    deploy:
-        needs: [frontend,backend]
-        uses: ./.github/workflows/cd.yml
-        secrets: inherit
