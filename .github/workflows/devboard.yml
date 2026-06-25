@@ -8,21 +8,13 @@ jobs:
     steps:
       - name: code-checkout
         uses: actions/checkout@v7
-      - name: setup node
-        uses: actions/setup-node@v4
+        
+      - name: setup-node-test-lint
+        uses: ./.github/actions/action.yml
         with:
           node-version: 20
-          cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
-      - name: install-npm
-        run: npm ci
-        working-directory: frontend/
-      - name: run-linter
-        run: npm run lint
-        working-directory: frontend/
-      - name: test
-        run: npm run test
-        working-directory: frontend/
+          code_path: frontend/
       - name: Docker-login
         uses: docker/login-action@v4
         with:
