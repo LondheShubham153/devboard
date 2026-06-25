@@ -10,11 +10,16 @@ jobs:
         uses: actions/checkout@v7
         
       - name: setup-node-test-lint
+        id: setup
         uses: ./.github/actions/
         with:
           node-version: 20
           cache-dependency-path: frontend/package-lock.json
           code_path: frontend/
+      - name: status
+        run: |
+          echo " ${{ steps.setup.outputs.out }}
+          
       - name: Docker-login
         uses: docker/login-action@v4
         with:
