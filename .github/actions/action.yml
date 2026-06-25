@@ -1,0 +1,49 @@
+name: node-test-lint
+description: 'this file is used to test , lint the node projects'
+
+inputs:
+  node-version:
+    defaults: '20'
+    required: false
+  cache-dependency-path:
+    required: true
+    type: string
+  code_path:
+    required: true
+    type: string
+
+outputs:
+  out:
+    value: ${{ steps.status.outputs.pass }}
+    
+runs:
+  using: 'composite'  
+  steps:
+    - name: code-checkout
+      uses: actions/checkout@v7
+    - name: node-setup
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache-dependency-path: ${{ inputs.cache-dependency-path }}
+    - name: node-install
+      shell: bash     
+      run: npm ci
+      working-directory: ${{ inputs.code_path }}
+    - name: linter
+      shell: bash
+      run: npm run lint
+      working-directory: ${{ inputs.code_path }}
+    - name: testing
+      shell: bash
+      run: npm run test
+      working-directory: ${{ inputs.code_path }}
+    - id: status
+      shell: bash
+      if: success()
+      run: |
+        echo "pass='all test cases passed'"  >> "$GITHUB_OUTPUT"
+        
+  
+      
+      
