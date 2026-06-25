@@ -6,6 +6,7 @@ jobs:
     uses: ./.github/workflows/resuable-workflow.yml
     with:
       env: prod
+      app_name: devboard
     secrets: 
       token: ${{ secrets.DOCKER_TOKEN }}
   job2:
@@ -13,5 +14,5 @@ jobs:
     needs: build
     steps:
       - name: print
-        run: echo " ${{ needs.build.outputs.version }}"
+        run: echo "${{ needs.build.outputs.data }}"
       
