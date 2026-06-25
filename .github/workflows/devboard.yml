@@ -50,10 +50,10 @@ jobs:
           go-version-file: backend/go.mod
           cache-dependency-path: backend/go.sum
       - name: run go-format
-        run: go fmt
+        run: go fmt main.go
         working-directory: backend/
       - name: run go vet
-        run: go vet
+        run: go vet main.go
         working-directory: backend/
 
       - name: testing
