@@ -6,6 +6,5 @@ jobs:
     uses: ./.github/workflows/resuable-workflow.yml
     with:
       env: prod
-      app_name: devboard
     secrets: 
       token: ${{ secrets.DOCKER_TOKEN }}
