@@ -10,9 +10,8 @@ jobs:
     secrets: 
       token: ${{ secrets.DOCKER_TOKEN }}
   job2:
-    runs-on: ubuntu-latest
     needs: build
+    runs-on: ubuntu-latest
     steps:
-      - name: print
-        run: echo "${{ needs.build.outputs.data }}"
+      - run: echo "${{ needs.build.outputs.data }}"
       
