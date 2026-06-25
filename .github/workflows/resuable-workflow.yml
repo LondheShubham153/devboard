@@ -1,6 +1,9 @@
 name: RE
 on:
   workflow_call:
+    outputs:
+      version:
+        value: ${{ jobs.job1.outputs.out1 }}
     inputs:
       env:
         type: string
