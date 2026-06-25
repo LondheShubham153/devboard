@@ -22,7 +22,7 @@ jobs:
         with:
           username: ${{ vars.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
-          code-path: frontend/        
+          code-path: frontend       
   backend:
     runs-on: ubuntu-latest
     steps:
@@ -44,7 +44,7 @@ jobs:
         with:
           username: ${{ vars.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
-          code-path: frontend/ 
+          code-path: frontend 
           
       
         
