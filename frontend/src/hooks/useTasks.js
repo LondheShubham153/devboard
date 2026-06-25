@@ -1,21 +1,21 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { listProjects, listTasks, createTask, updateTask } from '../mock/store';
+import { api } from '../api/client';
 
-// On the fundamentals branch these hooks read from the in-memory mock store
-// (src/mock/store.js) instead of the network. The component-facing API is
-// identical to the advanced branch, so nothing above this layer changes.
+// On the advanced branch these hooks hit the Go + Postgres backend through the
+// gateway (/api/*). The component-facing API is identical to the fundamentals
+// branch — only this data layer changed (mock store → real REST calls).
 
 export function useProjects() {
   return useQuery({
     queryKey: ['projects'],
-    queryFn: () => listProjects(),
+    queryFn: () => api.get('/api/projects'),
   });
 }
 
 export function useTasks(projectId) {
   return useQuery({
     queryKey: ['tasks', projectId],
-    queryFn: () => listTasks(projectId),
+    queryFn: () => api.get(`/api/tasks?project_id=${projectId}`),
     enabled: !!projectId,
   });
 }
@@ -23,7 +23,7 @@ export function useTasks(projectId) {
 export function useCreateTask(projectId) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body) => createTask({ ...body, project_id: projectId }),
+    mutationFn: (body) => api.post('/api/tasks', { ...body, project_id: projectId }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks', projectId] }),
   });
 }
@@ -31,7 +31,7 @@ export function useCreateTask(projectId) {
 export function useUpdateTask(projectId) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, ...patch }) => updateTask(id, patch),
+    mutationFn: ({ id, ...patch }) => api.patch(`/api/tasks/${id}`, patch),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks', projectId] }),
   });
 }

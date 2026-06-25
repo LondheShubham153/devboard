@@ -2,13 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { IconSearch, IconCornerDownLeft } from '@tabler/icons-react';
 import { StatusBadge } from '../ui/Badge';
-import { searchTasks } from '../../mock/store';
+import { api } from '../../api/client';
 
 /**
  * Command-bar style global search.
  *
  * - Cmd/Ctrl+K focuses it from anywhere
- * - Debounced 200ms → queries the mock store → renders a dropdown with results
+ * - Debounced 200ms → hits /api/search → renders a dropdown with results
  * - Arrow keys + Enter navigate the results list
  * - Esc clears
  */
@@ -44,7 +44,9 @@ export function CommandBar() {
     }
     const timer = setTimeout(async () => {
       try {
-        const { results: r } = await searchTasks(query, 1);
+        const { results: r } = await api.get(
+          `/api/search?q=${encodeURIComponent(query)}&project_id=1`,
+        );
         setResults(r || []);
         setCursor(0);
         setOpen(true);
