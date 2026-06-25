@@ -1,0 +1,26 @@
+name: RE
+on:
+  workflow_call:
+    inputs:
+      env:
+        type: string
+        default: 'staging'
+        required: true
+      app_name:
+        type: string
+        required: true
+    secrets:
+      token:
+        required: true
+jobs:
+  job1:
+    runs-on: ubuntu-latest
+    steps:
+      - name: code
+        uses: actions/checkout@v7
+      - name: print
+        run: echo " building ${{ inputs.app_name }} for ${{ inputs.env }}"
+      - name: token
+        run: echo "dokcer token is set ${{ secrets.token }}"
+        
+        
