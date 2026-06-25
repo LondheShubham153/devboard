@@ -8,7 +8,7 @@ on:
         required: true
       app_name:
         type: string
-        required: true
+        required: false
     secrets:
       token:
         required: true
