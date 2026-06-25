@@ -40,23 +40,14 @@ jobs:
     steps:
       - name: code-checkout
         uses: actions/checkout@v7
-      - name: setup-go
-        uses: actions/setup-go@v6
+      - name: go-setup-test
+        uses: .github/actions/node-setup/
         with:
-          go-version: '1.23'
+          go-version: 1.23
           go-version-file: backend/go.mod
           cache-dependency-path: backend/go.sum
-      - name: run go-format
-        run: go fmt main.go
-        working-directory: backend/
-      - name: run go vet
-        run: go vet main.go
-        working-directory: backend/
-
-      - name: testing
-        run: go test
-        working-directory: backend/
-
+          code-path: backend/
+        
       - name: docker login
         uses: docker/login-action@v4
         with:
