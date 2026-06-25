@@ -2,7 +2,7 @@ name: RE
 on:
   workflow_call:
     outputs:
-      version:
+      data:
         value: ${{ jobs.job1.outputs.out1 }}
     inputs:
       env:
@@ -19,7 +19,7 @@ on:
 jobs:
   job1:
     outputs:
-      out1: ${{ steps.version.outputs.version }}
+      out1: ${{ steps.v1.outputs.version }}
     runs-on: ubuntu-latest
     steps:
       - name: code
@@ -28,7 +28,7 @@ jobs:
         run: echo " building ${{ inputs.app_name }} for ${{ inputs.env }}"
       - name: token
         run: echo "dokcer token is set ${{ secrets.token }}"
-      - id: version
+      - id: v1
         run: |
           echo "version=v1.0.app" >> "$GITHUB_OUTPUT"
         
