@@ -61,7 +61,7 @@ jobs:
         working-directory: backend/
 
       - name: docker login
-        uses: dokcer/login-action@v4
+        uses: docker/login-action@v4
         with:
           username: ${{ vars.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
