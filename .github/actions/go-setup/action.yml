@@ -1,0 +1,49 @@
+name: go-setup-test
+description: 'this action file runs go setup, test the code and lint it'
+
+inputs:
+  go-version:
+    default: '1.23'
+  go-version-file: 
+    required: true
+    type: string
+  cache-dependency-path: 
+    required: true
+    type: string
+  code-path: 
+    required: true
+    type: string
+
+outputs:
+  out:
+    value: ${{ steps.status.outputs.pass }}
+
+runs:
+  using: 'composite'
+  steps:
+   - name: go-steup
+     uses: actions/setup-go@v6
+     with:
+       go-version: ${{ inputs.go-version }}
+       go-version-file: ${{ inputs.go-version-file }}
+       cache-dependency-path: ${{ inputs.cache-dependency-path }}
+   - name: run go-format
+     shell: bash
+     run: go fmt main.go
+     working-directory: ${{ inputs.code-path }}
+
+   - name: run go-vet
+     shell: bash
+     run: go vet main.go
+     working-directory: ${{ inputs.code-path }}
+
+   - name: testing
+     shell: bash
+     run: go test
+     working-directory: ${{ inputs.code-path }}
+
+   - id: status
+     shell: bash
+     if: success()
+     run: |
+       echo "pass='all test cases passed'" >> "$GITHUB_OUTPUT"
