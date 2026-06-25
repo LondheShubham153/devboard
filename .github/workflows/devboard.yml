@@ -1,0 +1,11 @@
+name: devboard
+on:
+  push:
+    branches: master
+    paths: .github/workflows
+jobs:
+  CI:
+    runs-on: [self-hosted, linux]
+    steps:
+      - name: code-checkout
+        run: actions/checkout@v7
