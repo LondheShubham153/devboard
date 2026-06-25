@@ -1,4 +1,4 @@
-#Goal- I have a  build, push, test  devboard frontend and backend for code, then push the images to Docker Hub
+#Goal- I have a  build, push,   devboard frontend and backend for code, then push the images to Docker Hub
 name: CI
 
 on:
