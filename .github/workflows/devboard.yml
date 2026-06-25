@@ -10,7 +10,7 @@ jobs:
         uses: actions/checkout@v7
         
       - name: setup-node-test-lint
-        uses: ./.github/actions/action.yml
+        uses: ./.github/actions/
         with:
           node-version: 20
           cache-dependency-path: frontend/package-lock.json
