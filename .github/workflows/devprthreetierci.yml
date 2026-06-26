@@ -75,7 +75,7 @@ jobs:
                
                 - name: Run Go formatter
                   run: go fmt ./backend/...
-                  working-directory: backend
+                  
 
                 
                 - name: run Go Vet
