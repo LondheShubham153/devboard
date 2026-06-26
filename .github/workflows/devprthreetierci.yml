@@ -1,0 +1,99 @@
+# Goal - I have to lint, Build, Test the code for frontened and backened 
+# then push images in dockerhub
+
+name: devprthreetierci
+
+on:
+    push:
+        branches: [advanced]
+
+jobs:
+    frontend:
+            #github runner pe chalega
+            runs-on: ubuntu-latest
+            steps: 
+                # code idhar lane ke liye
+                - name: checkout code
+                  uses: actions/checkout@v7
+
+                # linting pahle kaam kre, iske liye code node js pe hua hai so node js pahle setup kro
+                - name: setup NodeJs
+                  uses: actions/setup-node@v6
+                  # node js ka versionn vagera mention ke liye
+                  with:
+                    node-version: '20'
+                    cache: npm
+                    cache-dependency-path: frontend/package-lock.json
+
+                # npm package ko install krne ke liye npm ci means npm clean install
+                - name: install npm packages
+                  run: npm ci
+                  working-directory: frontend
+
+                  
+
+                # linter ko chalane ke liye
+                - name: run linter
+                  run: npm run lint
+                  working-directory: frontend
+                  
+                # test krne ke liye try
+                - name: run tests
+                  run: npm run test  
+                  working-directory: frontend
+            
+                - name: Log in to Docker Hub
+                  uses: docker/login-action@v4
+                  with:
+                    username: ${{vars.DOCKERHUB_USERNAME}}
+                    password: ${{secrets.DOCKERHUB_TOKEN}}
+
+                - name: Build and Push
+                  uses: docker/build-push-action@v7
+                  with:
+                    context: ./frontend
+                    push: true
+                    tags: ${{ vars.DOCKERHUB_USERNAME }}/devboard-frontend:latest
+  
+    backend:
+        #github runner pe chalega
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Code
+              uses: actions/checkout@v7
+
+            - name: Setup Go
+              uses: actions/setup-go@v6
+              with:
+                go-version: '1.23'
+                go-version-file: 'go.mod'
+                cache-dependency-path: go.sum
+            
+            - name: Run Go Formatter
+              run: go fmt
+              working-directory: backend
+
+            - name: Run Go Vet
+              run: go vet
+              working-directory: backend
+            
+            - name: Run Tests
+              run: go test 
+              working-directory: backend
+            
+            - name: Docker Setup [Login]
+              uses: docker/login-action@v4
+              with:
+                username: ${{ vars.DOCKERHUB_USERNAME }}
+                password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+            - name: Docker Build and Push
+              uses: docker/build-push-action@v7
+              with:
+                context: ./backend
+                push: true
+                tags: ${{ vars.DOCKERHUB_USERNAME }}/devboard-backend:latest
+    deploy:
+        needs: [frontend,backend]
+        uses: ./.github/workflows/devprthreetiercd.yml
+        secrets: inherit

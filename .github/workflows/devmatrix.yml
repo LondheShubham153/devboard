@@ -1,0 +1,36 @@
+# goal is to create matrix by which install multiple versions of go and do linting od multiple versions
+name: golinting
+
+on:
+    workflow_dispatch:
+
+jobs:
+    code-format:
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false # kahi fail hua to ruk jayega
+        
+            matrix: 
+                go: ['1.22','1.23','1.24'] # versions of go
+        steps:
+            - name: Code Checkout
+              uses: actions/checkout@v7
+
+            - name: Setup Go
+              uses: actions/setup-go@v6
+              with:
+                go-version: ${{ matrix.go }} # versions baar baar likhne ke jagah matrix
+                # and platform ko  kr do like matrix.go
+                # go ko chalane ke liye setup
+                go-version-file: 'go.mod'
+                cache-dependency-path: go.sum
+            
+            - name: Run Go Formatter
+              run: go fmt
+              working-directory: backend
+
+            - name: Run Go Vet
+              run: go vet
+              working-directory: backend
+
+                    

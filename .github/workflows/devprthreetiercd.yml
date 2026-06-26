@@ -1,26 +1,34 @@
-# Goal: To deploy the built images from CI Steps once the CI Worklow is Succeeded
+#goal to deploy the build images from CI steps once the CI workflow is succeeded.
 
-name: CD
+name: devprthreetiercd
 
 on:
     workflow_call:
+    
 
 jobs:
     deploy:
-        
+        # run on selfhosted
+    
         runs-on: self-hosted
         steps:
+            # code idhar lane liye
             - name: Code Checkout
               uses: actions/checkout@v7
+             
+            # environment copy ke liye  
 
             - name: Copy Example Env to main env
               run: cp .env.example .env
+
+            #docker setup ke liye    
 
             - name: Docker Setup [Login]
               uses: docker/login-action@v4
               with:
                 username: ${{ vars.DOCKERHUB_USERNAME }}
                 password: ${{ secrets.DOCKERHUB_TOKEN }}
+            # docker compose setup
 
             - name: Deploy the containers with Docker Compose
               run: |
