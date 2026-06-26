@@ -68,7 +68,7 @@ jobs:
                   uses: actions/setup-go@v6
                   # node js ka versionn vagera mention ke liye
                   with:
-                    go-version: '1.23'
+                    go-version: '1.22'
                     go-version-file: 'backend/go.mod'
                     cache-dependency-path: backend/go.sum
 
