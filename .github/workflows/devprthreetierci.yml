@@ -56,7 +56,7 @@ jobs:
                     tags: ${{ vars.DOCKERHUB_USERNAME }}/devboard-frontend:latest
   
     backend:
-        # Github runner
+        #github runner pe chalega
         runs-on: ubuntu-latest
         steps:
             - name: Checkout Code
