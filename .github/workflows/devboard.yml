@@ -13,10 +13,7 @@ jobs:
         with:
           node-version: 20
           cache-dependency-path: frontend/package-lock.json
-          code_path: frontend/
-      - name: status
-        run: |
-          echo " ${{ steps.setup.outputs.out }}"  
+          code_path: frontend/ 
       - name: docker-login-push
         uses: ./.github/actions/docker-setup
         with:
@@ -35,10 +32,7 @@ jobs:
           go-version: 1.23
           go-version-file: backend/go.mod
           cache-dependency-path: backend/go.sum
-          code-path: backend/
-      - name: status
-        run: |
-          echo " ${{ steps.setup.outputs.out }}" 
+          code-path: backend/ 
       - name: docker-login-push
         uses: ./.github/actions/docker-setup
         with:
