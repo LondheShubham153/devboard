@@ -4,7 +4,7 @@ name: devprthreetiercd
 
 on:
     workflow_run:
-        workflows: ['devprthreetiercd']
+        workflows: ['devprthreetierci']
         types: [completed]
         branches:
             - advanced
