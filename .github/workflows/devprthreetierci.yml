@@ -27,15 +27,20 @@ jobs:
 
                 # npm package ko install krne ke liye npm ci means npm clean install
                 - name: install npm packages
-                  run: npm ci     
+                  run: npm ci
+                  working-directory: frontend
+
+                  
 
                 # linter ko chalane ke liye
                 - name: run linter
                   run: npm run lint
+                  working-directory: frontend
                   
                 # test krne ke liye
                 - name: run tests
                   run: npm run test  
+                  working-directory: frontend
             
 
     
