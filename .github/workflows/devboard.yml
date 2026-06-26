@@ -41,8 +41,3 @@ jobs:
           username: ${{ vars.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
           code-path: backend
-          
-      
-        
-        
-        
