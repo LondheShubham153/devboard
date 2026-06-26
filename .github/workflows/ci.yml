@@ -24,6 +24,11 @@ jobs:
             - name: run linter
               run: npm run lint
               working-directory: frontend
+
+            - name: Run Tests
+              run: npm run test
+              working-directory: frontend
+              
             
 
     #     frontend:
