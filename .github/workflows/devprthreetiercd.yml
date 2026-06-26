@@ -3,11 +3,8 @@
 name: devprthreetiercd
 
 on:
-    workflow_run:
-        workflows: ['devprthreetierci']
-        types: [completed]
-        branches:
-            - advanced
+    workflow_call:
+    #
 
 jobs:
     deploy:
