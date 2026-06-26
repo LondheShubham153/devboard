@@ -8,7 +8,7 @@ on:
         branches: [advanced]
 
 jobs:
-    frontened:
+    frontend:
             #github runner pe chalega
             runs-on: ubuntu-latest
             steps: 
