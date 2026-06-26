@@ -69,8 +69,8 @@ jobs:
                   # node js ka versionn vagera mention ke liye
                   with:
                     go-version: '1.23'
-                    go-version-file: 'go.mod'
-                    cache-dependency-path: go.sum
+                    go-version-file: 'backend/go.mod'
+                    cache-dependency-path: backend/go.sum
 
                
                 - name: Run Go formatter
