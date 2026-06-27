@@ -31,7 +31,7 @@ services:
   backend:
     # build = local; image = the tag CI pushes and CD pulls (IMAGE_TAG, else latest).
     build: ./backend
-    image: trainwithshubham/devboard-backend:${IMAGE_TAG:-latest}
+    image: ${DOCKERHUB_USERNAME:-trainwithshubham}/devboard-backend:${IMAGE_TAG:-latest}
     environment:
       PORT: "${BACKEND_PORT}"
       # Built from the Postgres vars above so the credentials live in one place.
@@ -44,7 +44,7 @@ services:
 
   frontend:
     build: ./frontend
-    image: trainwithshubham/devboard-frontend:${IMAGE_TAG:-latest}
+    image: ${DOCKERHUB_USERNAME:-trainwithshubham}/devboard-frontend:${IMAGE_TAG:-latest}
     depends_on:
       - backend
     ports:

@@ -1,0 +1,37 @@
+name: SonarQube SAST
+
+on:
+  workflow_call:
+
+jobs:
+  scan-and-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: SonarQube Scan
+        uses: sonarsource/sonarqube-scan-action@v6
+        with:
+          args: >
+            -Dsonar.projectKey=devboard
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+      - name: SonarQube Quality Gate Check
+        uses: sonarsource/sonarqube-quality-gate-action@master
+        with:
+          pollingTimeoutSec: 600
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+      - name: Upload SonarQube Task Metadata
+        uses: actions/upload-artifact@v4
+        with:
+          name: sonarqube-report-task
+          path: .scannerwork/report-task.txt
+          

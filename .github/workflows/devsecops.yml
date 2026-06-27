@@ -1,0 +1,40 @@
+# Reusable DevSecOps Pipeline Orchestrator
+# Checks -> SAST -> Docker Package -> Trivy Scan -> EC2 Deploy -> DAST Scan
+name: DevSecOps
+
+on: 
+    push:
+        branches: [ master ]
+        paths-ignore:
+          - 'README.md'
+          - '.gitignore'
+          - 'LICENSE'
+
+jobs:
+  checks:
+    uses: ./.github/workflows/checks.yml
+    secrets: inherit
+
+  sonarqube:
+    uses: ./.github/workflows/sonarqube.yml
+    secrets: inherit
+
+  frontend:
+    needs: checks
+    uses: ./.github/workflows/frontend-ci.yml
+    secrets: inherit
+
+  backend:
+    needs: checks
+    uses: ./.github/workflows/backend-ci.yml
+    secrets: inherit
+
+  deploy:
+    needs: [frontend, backend, sonarqube]
+    uses: ./.github/workflows/cd.yml
+    secrets: inherit
+
+  zap-scan:
+    needs: deploy
+    uses: ./.github/workflows/zap-scan.yml
+    secrets: inherit

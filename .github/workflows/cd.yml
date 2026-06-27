@@ -1,4 +1,4 @@
-# Goal: To deploy the built images from CI Steps once the CI Worklow is Succeeded
+# Reusable CD Deployment Workflow (SSH EC2 Deploy & Image Pruning)
 
 name: CD
 
@@ -7,22 +7,24 @@ on:
 
 jobs:
     deploy:
-        
-        runs-on: self-hosted
+        runs-on: ubuntu-latest
         steps:
             - name: Code Checkout
               uses: actions/checkout@v7
 
-            - name: Copy Example Env to main env
-              run: cp .env.example .env
-
-            - name: Docker Setup [Login]
-              uses: docker/login-action@v4
+            - name: Deploy to EC2 via SSH
+              uses: appleboy/ssh-action@v1.0.3
               with:
-                username: ${{ vars.DOCKERHUB_USERNAME }}
-                password: ${{ secrets.DOCKERHUB_TOKEN }}
+                host: ${{ secrets.EC2_HOST }}
+                username: ${{ secrets.EC2_USERNAME }}
+                key: ${{ secrets.EC2_SSH_KEY }}
+                script: |
+                  cd ${{ secrets.EC2_TARGET_DIR || '/home/ubuntu/devboard' }}
+                  if [ ! -f .env ]; then
+                    cp .env.example .env
+                  fi
+                  export DOCKERHUB_USERNAME="${{ vars.DOCKERHUB_USERNAME }}"
+                  docker compose pull
+                  docker compose up -d
+                  docker image prune -f
 
-            - name: Deploy the containers with Docker Compose
-              run: |
-                docker compose pull
-                docker compose up -d
