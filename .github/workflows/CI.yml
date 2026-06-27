@@ -18,6 +18,10 @@ jobs:
 
       - name: Install Dependencies
         run: npm ci
+      - name: install Linter
+        run: npm install eslint --save-dev
+      - name: setup Eslint config file
+        run: npm init @eslint/config@latest
 
       - name: Run Linter
         run: npm run lint
