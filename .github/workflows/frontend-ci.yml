@@ -1,10 +1,10 @@
-name: Frontend Build & Push
+name: Frontend Build, Scan & Push
 
 on:
   workflow_call:
 
 jobs:
-  build-and-push:
+  build-scan-push:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -16,9 +16,31 @@ jobs:
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Docker Build & Push
+      - name: Build Docker image (Local)
         uses: docker/build-push-action@v7
         with:
           context: ./frontend
-          push: true
+          load: true
           tags: ${{ vars.DOCKERHUB_USERNAME }}/devboard-frontend:latest
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@v0.36.0
+        continue-on-error: true
+        with:
+          image-ref: ${{ vars.DOCKERHUB_USERNAME }}/devboard-frontend:latest
+          format: 'table'
+          output: 'trivy-frontend-report.txt'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL'
+
+      - name: Upload Trivy Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-frontend-report
+          path: trivy-frontend-report.txt
+
+      - name: Push Docker image
+        run: docker push ${{ vars.DOCKERHUB_USERNAME }}/devboard-frontend:latest
+

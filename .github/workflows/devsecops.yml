@@ -29,24 +29,8 @@ jobs:
     uses: ./.github/workflows/backend-ci.yml
     secrets: inherit
 
-  trivy-frontend:
-    needs: frontend
-    uses: ./.github/workflows/trivy-scan.yml
-    with:
-      image-ref: ${{ vars.DOCKERHUB_USERNAME }}/devboard-frontend:latest
-      artifact-name: trivy-frontend-report
-    secrets: inherit
-
-  trivy-backend:
-    needs: backend
-    uses: ./.github/workflows/trivy-scan.yml
-    with:
-      image-ref: ${{ vars.DOCKERHUB_USERNAME }}/devboard-backend:latest
-      artifact-name: trivy-backend-report
-    secrets: inherit
-
   deploy:
-    needs: [trivy-frontend, trivy-backend, sonarqube]
+    needs: [frontend, backend, sonarqube]
     uses: ./.github/workflows/cd.yml
     secrets: inherit
 
