@@ -23,7 +23,7 @@ jobs:
 
 
       - name: Govuln check
-        run: govulncheck ./...
+        run: govulncheck ./... > vuln-report.txt
         working-directory: backend
 
       - name: Set up Node.js
