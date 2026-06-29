@@ -1,0 +1,13 @@
+#goal is to run end to end DevsecOps CI pipeline for the project.
+
+name: DevSecOps CI Pipelinne
+
+on:
+  push:
+    branches: [advanced]
+
+jobs:
+
+# Code stage (with shift left)
+  Code-Quality:
+    uses: ./.github/workflows/code-quality.yml

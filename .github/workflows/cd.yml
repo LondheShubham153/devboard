@@ -2,7 +2,8 @@
 
 name: CD
 on:
-  workflow_call:
+  workflow_dispatch:
+  #workflow_call: this is used to call this workflow from another workflow, in this case from ci.yml file
  
 jobs:
   deploy:

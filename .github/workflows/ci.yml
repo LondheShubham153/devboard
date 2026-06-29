@@ -2,7 +2,7 @@
 # then push images to dockerhub.
 name: CI
 on:
-  push:
+  workflow_dispatch:
     branches: [advanced]
 
 
@@ -31,6 +31,12 @@ jobs:
       - name: Run tests
         run: npm run test
         working-directory: frontend
+
+      #the below will be used for security of code check with DEVSECOPS using code-quality.yml file which will check the code before pushing to dockerhub
+      - name: Code Quality Check
+        uses: .github/workflows/code-quality.yml
+
+
 
       - name: Docker Setup [Login]
         uses: docker/login-action@v4
