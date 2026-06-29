@@ -19,7 +19,8 @@ jobs:
           cache-dependency-path: go.sum
 
       - name: install govuluncheck
-        run: go install golang.org/x/vuln/cmd/govulncheck@1.1.4
+        run: go install golang.org/x/vuln/cmd/govulncheck@v1.1.4
+
 
       - name: Govuln check
         run: govulncheck ./...
