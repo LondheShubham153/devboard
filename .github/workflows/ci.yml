@@ -6,7 +6,7 @@ on:
         branches: [advanced]
 
 jobs:
-    code-lint:
+    frontend:
         runs-on: ubuntu-latest
         steps:
             - name: code checkout
@@ -40,6 +40,7 @@ jobs:
               with:
                 context: ./frontend/Docker.mutistage
                 push: true
+                tags: ${{ vars.DOCKERHUB_USERNAME }}/frontend:latest
     #  backend:
 
 
@@ -77,7 +78,7 @@ jobs:
               with:
                 context: ./backend
                 push: true
-                tags:  ${{ vars.DOCKERHUB_USERNAME }}/devboard-backend:latest
+                tags:  ${{ vars.DOCKERHUB_USERNAME }}/backend:latest
   
 
 
