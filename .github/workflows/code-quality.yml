@@ -4,7 +4,6 @@ name: Code Quality
 on:
   workflow_call:
 
-
 jobs:
   SAST:
     runs-on: ubuntu-latest
@@ -20,7 +19,7 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install npm packages
-        run: npm install
+        run: npm install --legacy-peer-deps
         working-directory: frontend
 
       - name: Run linter
