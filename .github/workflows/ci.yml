@@ -28,21 +28,56 @@ jobs:
             - name: Run Tests
               run: npm run test
               working-directory: frontend
-              
-            
 
-    #     frontend:
-    #         steps:
+            - name: Set up Docker
+              uses: docker/setup-docker-action@v5
+              with:
+                  username: ${{ vars.DOCKERHUB_USERNAME }}
+                  password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-    #     code:
-    #     build:
-    #     test:
-    #     push:
-        
+            - name: Build and push
+              uses: docker/build-push-action@v7
+              with:
+                context: ./frontend/Docker.mutistage
+                push: true
     #  backend:
-    #     code:
-    #     build:
-    #     test:
-    #     push:
+
+
+    backend:
+        runs-on: ubuntu-latest
+        steps:
+            - name: code checkout
+              uses: actions/checkout@v4
+            - name: setup nodejs
+              uses: actions/setup-go@v6
+              with:
+                go-version: '1.22'
+                go-version-file: 'go.mod'
+                cache-dependency-path: go.sum
+            - name: Run go formater
+              run: 'go fmt'
+              working-directory: backend
+            
+            - name: Run go vet
+              run: go vet
+              working-directory: backend
+
+            - name: Run Tests
+              run: go test
+              working-directory: backend
+
+            - name: Set up Docker
+              uses: docker/setup-docker-action@v5
+              with:
+                  username: ${{ vars.DOCKERHUB_USERNAME }}
+                  password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+            - name: Build and push
+              uses: docker/build-push-action@v7
+              with:
+                context: ./backend
+                push: true
+                tags:  ${{ vars.DOCKERHUB_USERNAME }}/devboard-backend:latest
+  
 
 
