@@ -40,7 +40,7 @@ jobs:
               with:
                 context: ./frontend/Docker.mutistage
                 push: true
-                tags: ${{ vars.DOCKERHUB_USERNAME }}/ devboard:latest
+                tags: ${{ vars.DOCKERHUB_USERNAME }} devboard:latest
     #  backend:
 
 
@@ -78,7 +78,7 @@ jobs:
               with:
                 context: ./backend
                 push: true
-                tags:  ${{ vars.DOCKERHUB_USERNAME }}/ devboard:latest
+                tags:  ${{ vars.DOCKERHUB_USERNAME }} devboard:latest
   
 
 
