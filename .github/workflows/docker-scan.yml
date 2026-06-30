@@ -1,0 +1,21 @@
+# goal is to check for security of docker images and docker files.with hardolint
+
+name: Docker Scan
+on:
+  workflow_call:
+
+jobs:
+  docker-file-lint-and-scan:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: 
+        folders: ['frontend','backend']
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+      - name: ${{ matrix.folders }} Dockerfile Lint
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: ${{ matrix.folders }}/Dockerfile
+          
