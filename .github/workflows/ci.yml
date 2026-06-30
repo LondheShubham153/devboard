@@ -30,7 +30,7 @@ jobs:
               working-directory: frontend
 
             - name: Set up Docker
-              uses: docker/setup-docker-action@v5
+              uses: docker/login-action@v4
               with:
                   username: ${{ vars.DOCKERHUB_USERNAME }}
                   password: ${{ secrets.DOCKERHUB_TOKEN }}
