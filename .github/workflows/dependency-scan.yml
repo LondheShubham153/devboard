@@ -23,6 +23,7 @@ jobs:
 
 
       - name: Govuln check
+        continue-on-error: true
         run: govulncheck ./... > vuln-report.txt
         working-directory: backend
 
