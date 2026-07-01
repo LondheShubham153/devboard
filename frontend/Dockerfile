@@ -6,7 +6,7 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies (npm install regenerates lock if needed)
+# Install dependencies with pinned versions
 RUN npm install --legacy-peer-deps
 
 # Copy application source
@@ -20,8 +20,8 @@ FROM dhi.io/node:22-alpine-dev
 
 WORKDIR /app
 
-# Install http-server (lightweight, no build-time dependencies like esbuild)
-RUN npm install -g http-server && npm cache clean --force
+# Install http-server with pinned version (production-grade HTTP server)
+RUN npm install -g http-server@14.2.0 && npm cache clean --force
 
 # Copy only built artifacts from build stage
 COPY --from=build /app/dist ./dist
