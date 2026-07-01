@@ -1,6 +1,6 @@
 # Goal - to check the code quality of the frontend and backend code using sonarcloud and sonar-scan.yml file so that it dosen't have sceurity threats and issues.
 
-name": Sonar Scan
+name: Sonar Scan
 on:
   workflow_call:
 
