@@ -1,23 +1,39 @@
 # Stage 1 — build the app into static files
-FROM node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293 AS build
+FROM dhi.io/node:22-alpine-dev AS build
+
 WORKDIR /app
+
+# Copy package files
 COPY package*.json ./
+
+# Install dependencies (npm install regenerates lock if needed)
 RUN npm install --legacy-peer-deps
+
+# Copy application source
 COPY . .
+
+# Build the application
 RUN npm run build
 
-# Stage 2 — install vite globally and prepare runtime
-FROM node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293 AS deps
-WORKDIR /app
-RUN npm install -g vite@5
-COPY --from=build /app/dist ./dist
-COPY vite.preview.config.js ./vite.config.js
+# Stage 2 — Production image (minimal, secure, non-root)
+FROM dhi.io/node:22-alpine-dev
 
-# Stage 3 — runtime
-FROM node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293
 WORKDIR /app
-RUN npm install -g vite@5 && npm cache clean --force
+
+# Install http-server (lightweight, no build-time dependencies like esbuild)
+RUN npm install -g http-server && npm cache clean --force
+
+# Copy only built artifacts from build stage
 COPY --from=build /app/dist ./dist
-COPY vite.preview.config.js ./vite.config.js
+
+# DHI runs as nonroot user by default (UID 65532)
+# Ensure correct permissions
+RUN chown -R 65532:65532 /app
+
 EXPOSE 4173
-CMD ["vite", "preview", "--host", "0.0.0.0", "--port", "4173"]
+
+# Healthcheck to ensure container is healthy
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:4173', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
+
+CMD ["http-server", "dist", "-p", "4173", "--gzip"]
