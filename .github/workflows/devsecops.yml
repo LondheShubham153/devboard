@@ -13,13 +13,19 @@ jobs:
     uses: ./.github/workflows/code-quality.yml
 
 # Secret scanning stage
-
   Secret-Scanning:
     uses: ./.github/workflows/secret-scanning.yml
 
+# dependency scanning stage
   dependency-scanning:
     uses: ./.github/workflows/dependency-scan.yml
-
+    
+# Docker scanning stage
   docker-scanning:
     uses: ./.github/workflows/docker-scan.yml
+    secrets: inherit
+
+# SonarQube scanning stage
+    sonar-scanning:
+    uses: ./.github/workflows/sonar-scan.yml
     secrets: inherit

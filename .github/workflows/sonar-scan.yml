@@ -1,0 +1,18 @@
+# Goal - to check the code quality of the frontend and backend code using sonarcloud and sonar-scan.yml file so that it dosen't have sceurity threats and issues.
+
+name": Sonar Scan
+on:
+  workflow_call:
+
+jobs:
+  sonar-scanner:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+      
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v8.2.0
+        env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }} 
