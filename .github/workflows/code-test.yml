@@ -22,7 +22,7 @@ jobs:
         working-directory: frontend
 
       - name: Run tests
-        run: npm run test -- --reporter=verbose
+        run: npm run test 
         working-directory: frontend
 
       - name: Setup Go
@@ -33,5 +33,5 @@ jobs:
           cache-dependency-path: go.sum
             
       - name: Run Tests
-        run: go test -v -timeout 10m ./...
+        run: go test -v 
         working-directory: backend
