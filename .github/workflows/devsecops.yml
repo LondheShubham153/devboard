@@ -19,13 +19,13 @@ jobs:
 # dependency scanning stage
   dependency-scanning:
     uses: ./.github/workflows/dependency-scan.yml
-    
+
 # Docker scanning stage
   docker-scanning:
     uses: ./.github/workflows/docker-scan.yml
     secrets: inherit
 
 # SonarQube scanning stage
-    sonar-scanning:
+  sonar-scanning:
     uses: ./.github/workflows/sonar-scan.yml
     secrets: inherit
