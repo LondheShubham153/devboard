@@ -35,12 +35,15 @@ reset:
 
 smoke:
 	@echo "backend health:"
-	curl -s http://localhost:8081/health
+	curl -s http://localhost:8080/api/health
 	@echo ""
 	@echo "frontend page:"
 	curl -s -o /dev/null -w "  HTTP %{http_code}\n" http://localhost:8080/
+	@echo "projects from the database:"
+	curl -s "http://localhost:8080/api/projects"
+	@echo ""
 	@echo "tasks from the database:"
-	curl -s "http://localhost:8080/api/tasks?project_id=1"
+	curl -s "http://localhost:8080/api/tasks?project_id=1" | head -c 200
 	@echo ""
 
 # These are command names, not files — so make always runs them.

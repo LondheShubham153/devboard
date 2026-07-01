@@ -1,6 +1,7 @@
-# DevBoard (advanced) — UI + Go backend + Postgres. That's the whole stack.
+# DevBoard (advanced) — UI + Go backend + Postgres + nginx gateway.
 #
-#   browser ──▶ frontend (vite preview :4173) ──/api──▶ backend (Go) ──▶ postgres
+#   browser ──▶ nginx :8080 ──┬──▶ frontend (vite preview :4173)
+#                             └──/api──▶ backend (Go :8080) ──▶ postgres
 #
 # Every configurable value lives in .env — Compose loads it automatically and
 # fills in the ${...} placeholders below. Edit .env, not this file, to change
@@ -39,16 +40,29 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    ports:
-      - "${BACKEND_HOST_PORT}:${BACKEND_PORT}"   # host:container — direct curl/debug; the UI uses the gateway
+    # No port exposure to host; only nginx talks to backend
 
   frontend:
     build: ./frontend
     image: sid0802/devboard-frontend:${IMAGE_TAG:-latest}
     depends_on:
       - backend
+    # No port exposure to host; only nginx talks to frontend
+
+  gateway:
+    image: nginx:alpine
+    depends_on:
+      - frontend
+      - backend
     ports:
-      - "${FRONTEND_HOST_PORT}:4173"   # vite preview serves on 4173 inside the container
+      - "${FRONTEND_HOST_PORT}:8080"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:8080"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
 volumes:
   pgdata:
