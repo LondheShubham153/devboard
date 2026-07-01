@@ -1,7 +1,7 @@
 # #goal to deploy the built images from CI file once the ci workflow is succeeded
 
 # name: CD
-# on:
+#on:
 #   workflow_dispatch:
     
 #   #workflow_call: this is used to call this workflow from another workflow, in this case from ci.yml file

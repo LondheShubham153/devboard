@@ -1,7 +1,7 @@
 # #Goal - I have to lint, build , test the code for frontend and backend.
 # # then push images to dockerhub.
 # name: CI
-# on:
+#on
 #   workflow_dispatch:
 #     branches: [advanced]
 
