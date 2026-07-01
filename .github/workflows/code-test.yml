@@ -18,11 +18,11 @@ jobs:
           cache-dependency-path: frontend/package.json
 
       - name: Install npm packages(dependency)
-        run: npm install --legacy-peer-deps
+        run: npm ci --legacy-peer-deps
         working-directory: frontend
 
       - name: Run tests
-        run: npm run test
+        run: npm run test -- --reporter=verbose
         working-directory: frontend
 
       - name: Setup Go
@@ -33,5 +33,5 @@ jobs:
           cache-dependency-path: go.sum
             
       - name: Run Tests
-        run: go test 
+        run: go test -v -timeout 10m ./...
         working-directory: backend
