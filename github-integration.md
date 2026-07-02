@@ -1,0 +1,6 @@
+- Go to jira
+- Go to space
+- Go to Board
+- Selection Task
+- after completing task complete sprint
+- 
