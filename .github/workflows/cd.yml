@@ -1,0 +1,27 @@
+#Goal:- To deplou th built image from CI steps once the CI workflow is succeeded
+name: CD
+
+on:
+    workflow_run:
+        workflows: ['CI']
+        types: [completed]
+        branches: 
+            - 'advanced'
+jobs:
+    deploy:
+        runs-on: self-hosted
+        steps:
+            - name: code checkout
+              uses: actions/checkout@v7
+            - name: copy example env to main env
+              run : cp .env.example .env
+            - name: Set up Docker
+              uses: docker/login-action@v4
+              with:
+                  username: ${{ vars.DOCKERHUB_USERNAME }}
+                  password: ${{ secrets.DOCKERHUB_TOKEN }}
+            - name: deploy the container with dokcer compose
+              run: |
+                docker compose pull
+                docker compose up
+
