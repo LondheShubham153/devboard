@@ -1,0 +1,26 @@
+name: deploy
+on:
+  workflow_call:
+    
+  #workflow_call: this is used to call this workflow from another workflow, in this case from devsecops.yml file
+ 
+jobs:
+  deploy:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: copy .env.example
+        run: cp .env.example .env
+
+      - name: Docker Setup [Login]
+        uses: docker/login-action@v4
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Deploy the containers with docker compose
+        run: |
+          docker compose pull
+          docker compose up -d

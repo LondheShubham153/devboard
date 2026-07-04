@@ -1,4 +1,3 @@
-# Goal To install multiple versions of Go and do linting for multiple versions
 name: Go Linter
 
 on: 
