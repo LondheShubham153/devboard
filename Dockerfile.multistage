@@ -1,0 +1,24 @@
+FROM node:24 as builder
+
+WORKDIR /app
+
+COPY . .
+
+RUN npm install
+
+RUN npm run build
+
+# Stage 2 - (Runner Stage) - Used to run the application from builder stage
+
+FROM node:24-alpine 
+
+COPY package.json .
+
+WORKDIR /app
+
+RUN npm install -g vite
+
+COPY --from=builder /app/dist ./dist
+
+CMD ["npm","run","dev","--","--host","0.0.0.0","--port","5174"]
+
