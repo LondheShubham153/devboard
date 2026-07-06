@@ -3,6 +3,7 @@ on:
   pull_request:
     branches:
       - master
+      - feature/pr-test
   
 jobs:
   pr_check:
