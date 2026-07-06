@@ -1,8 +1,8 @@
 name: pull request check
 on:
   pull_request:
-  branches:
-    - master
+    branch:
+      - master
   
 jobs:
   pr_check:
