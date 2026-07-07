@@ -4,6 +4,9 @@ on:
     branches:
       - master
       - feature/pr-test
+
+  workflow_dispatch:
+  
   
 jobs:
   pr_check:
