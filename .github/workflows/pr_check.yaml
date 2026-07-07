@@ -1,12 +1,7 @@
 name: pull request check
 on:
-  pull_request:
-    branches:
-      - master
-      - feature/pr-test
-
-  workflow_dispatch:
-  
+  schedule:
+    - cron: "* * * * *"
   
 jobs:
   pr_check:
