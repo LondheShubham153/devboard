@@ -4,11 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev":     "vite",
-    "build":   "vite build",
+    "dev": "vite",
+    "build": "vite build",
     "preview": "vite preview",
-    "lint":    "eslint src",
-    "test":    "vitest run --reporter=verbose"
+    "lint": "eslint src",
+    "test": "vitest run --reporter=verbose"
   },
   "dependencies": {
     "@tabler/icons-react": "^3.17.0",
@@ -19,6 +19,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.12.0",
+    "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.5.0",
     "@testing-library/react": "^16.0.1",
     "@testing-library/user-event": "^14.5.2",
@@ -31,7 +32,7 @@
     "jsdom": "^25.0.1",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.13",
-    "vite": "^5.4.8",
-    "vitest": "^2.1.2"
+    "vite": "^8.1.0",
+    "vitest": "^4.1.9"
   }
 }
