@@ -5,8 +5,8 @@ on:
     workflow_run:
         workflows: ['CI']
         types: [completed]
-        branches: 
-            - 'advanced'
+        branches: [advanced]
+           
 jobs:
     deploy:
         runs-on: self-hosted
