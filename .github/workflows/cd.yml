@@ -2,10 +2,10 @@
 name: CD
 
 on:
-    workflow_run:
-        workflows: ['CI']
-        types: [completed]
-        branches: [advanced]
+    workflow_call:
+        # workflows: ['CI']
+        # types: [completed]
+        # branches: [advanced]
            
 jobs:
     deploy:
