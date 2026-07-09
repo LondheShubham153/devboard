@@ -20,7 +20,7 @@ jobs:
               with:
                   username: ${{ vars.DOCKERHUB_USERNAME }}
                   password: ${{ secrets.DOCKERHUB_TOKEN }}
-            - name: deploy the container with dokcer compose up
+            - name: deploy the container with dokcer compose-v2 up
               run: |
                 docker compose pull
                 docker compose up -d
