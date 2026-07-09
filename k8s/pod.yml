@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: devboard-frontend
+  namespace: devboard
+spec:
+  containers:
+  - name: devboard-frontend
+    image: sauravsam51/devboard-frontend:latest 
+    ports:
+    - containerPort: 4173
