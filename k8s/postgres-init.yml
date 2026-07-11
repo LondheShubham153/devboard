@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init
+  namespace: devboard
+data:
+  01_schema.sql: |
+    CREATE TABLE IF NOT EXISTS projects (
+        id          SERIAL PRIMARY KEY,
+        name        VARCHAR(200) NOT NULL,
+        description TEXT,
+        owner_id    INTEGER,
+        created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+    );
+    CREATE TABLE IF NOT EXISTS tasks (
+        id          SERIAL PRIMARY KEY,
+        title       VARCHAR(300) NOT NULL,
+        description TEXT,
+        project_id  INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        assignee_id INTEGER,
+        status      VARCHAR(20) NOT NULL DEFAULT 'todo'
+                    CHECK (status IN ('todo','in_progress','blocked','done')),
+        priority    VARCHAR(10) NOT NULL DEFAULT 'medium'
+                    CHECK (priority IN ('low','medium','high')),
+        due_date    DATE,
+        created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_tasks_project_id ON tasks(project_id);
+    CREATE INDEX IF NOT EXISTS idx_tasks_status     ON tasks(status);
+    CREATE OR REPLACE FUNCTION touch_updated_at() RETURNS TRIGGER AS $$
+    BEGIN NEW.updated_at = NOW(); RETURN NEW; END;
+    $$ LANGUAGE plpgsql;
+    DROP TRIGGER IF EXISTS tasks_touch_updated_at ON tasks;
+    CREATE TRIGGER tasks_touch_updated_at
+        BEFORE UPDATE ON tasks FOR EACH ROW EXECUTE FUNCTION touch_updated_at();
+  02_seed.sql: |
+    INSERT INTO projects (id, name, description, owner_id) VALUES
+        (1, 'DevBoard MVP',   'Ship the v1 task tracker', 1),
+        (2, 'Marketing Site', 'Landing page + launch blog', 1)
+    ON CONFLICT (id) DO NOTHING;
+    INSERT INTO tasks (title, description, project_id, assignee_id, status, priority, due_date) VALUES
+        ('Design the task schema',     'projects, tasks, statuses',     1, 1, 'done',        'high',   '2026-05-05'),
+        ('Build the kanban board',     'drag and drop columns',         1, 2, 'in_progress', 'high',   '2026-06-18'),
+        ('Wire up the dashboard hero', 'velocity + chip stats',         1, 1, 'in_progress', 'medium', '2026-06-20'),
+        ('Add the command bar',        'global search',                 1, 3, 'todo',        'medium', '2026-06-25'),
+        ('Dark mode polish',           'grain + gradients',             1, 2, 'todo',        'low',    NULL),
+        ('Fix flaky avatar colors',    'hash collision on initials',    1, 1, 'blocked',     'high',   '2026-06-15'),
+        ('Write component tests',      'Vitest + testing-library',      1, 3, 'todo',        'medium', NULL),
+        ('Ship the v1 release',        'tag and announce',              1, 1, 'todo',        'high',   '2026-06-30'),
+        ('Draft the launch blog post', '',                              2, 2, 'in_progress', 'medium', '2026-06-22'),
+        ('Hero illustration',          '',                              2, 3, 'todo',        'low',    NULL);
+    SELECT setval('projects_id_seq', (SELECT MAX(id) FROM projects));
+

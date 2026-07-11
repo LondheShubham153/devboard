@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres-statefulset
+  namespace: devboard
+  labels:
+    app: devboard-postgres
+
+spec:
+  serviceName: postgres
+  replicas: 3
+
+  selector:
+    matchLabels:
+      app: devboard-postgres
+
+  template:
+    metadata:
+      labels:
+        app: devboard-postgres
+
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+
+          ports:
+            - containerPort: 5432
+
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: devboard-configmap
+                  key: POSTGRES_USER
+
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: devboard-secrets
+                  key: POSTGRES_PASSWORD
+
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: devboard-secrets
+                  key: POSTGRES_DB
+
+          volumeMounts:
+            - name: init
+              mountPath: /docker-entrypoint-initdb.d
+              readOnly: true
+
+            - name: data
+              mountPath: /var/lib/postgresql/data
+
+      volumes:
+        - name: init
+          configMap:
+            name: postgres-init
+
+        - name: data
+          persistentVolumeClaim:
+            claimName: postgres-pvc

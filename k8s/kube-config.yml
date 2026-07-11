@@ -1,0 +1,39 @@
+# Defines the Kind cluster configuration.
+kind: Cluster
+
+# Specifies the Kind API version.
+apiVersion: kind.x-k8s.io/v1alpha4
+
+# Sets the name of the Kind cluster.
+name: sam-cluster
+
+# Defines all nodes that will be created in the cluster.
+nodes:
+
+# Creates the Kubernetes control-plane (master) node.
+- role: control-plane
+
+  # Uses the Kubernetes v1.35.0 node image.
+  image: kindest/node:v1.35.0
+
+  # Maps ports between host and Kind container.
+  extraPortMappings:
+
+    # Container listens on port 30080.
+    - containerPort: 30080
+
+      # Exposes the application on host port 8080.
+      hostPort: 8080
+
+      # Uses the TCP protocol for communication.
+      protocol: TCP
+
+# Creates the first worker node.
+- role: worker
+  image: kindest/node:v1.35.0
+
+# Creates the second worker node.
+- role: worker
+  image: kindest/node:v1.35.0
+
+
