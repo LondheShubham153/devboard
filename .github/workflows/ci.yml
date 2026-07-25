@@ -1,0 +1,97 @@
+# Goal  - I have to Lint,build,Test the code for frontend and backend 
+# then push image to docker hub
+
+name: CI
+
+on: 
+  push:
+      paths:
+        - '**'
+        - '!.github/workflows/**'
+      branches:  [advance]
+
+
+jobs:
+   frontend:
+      runs-on: ubuntu-latest      
+      steps: 
+        - name: Checkout code
+          uses: actions/checkout@v7
+
+        - name: Setup NodeJs 
+          uses: actions/setup-node@v6
+          with:
+            node-version: '22'
+            cache: npm
+            cache-dependency-path: frontend/package-lock.json    
+
+        - name: Install npm packages 
+          run: npm ci
+          working-directory: frontend
+
+        - name: Run Linter
+          run: npm run lint 
+          working-directory: frontend
+
+        - name: Run Tests
+          run: npm run test
+          working-directory: frontend
+
+        - name: Docker setup[login]
+          uses: docker/login-action@v4
+          with:
+           username: ${{ vars.DOCKERHUB_USERNAME }}
+           password: ${{ secrets.DOCKERHUB_TOKEN }}
+          
+        - name: Docker build and push 
+          uses: docker/build-push-action@v7
+          with:
+            context: ./frontend
+            push: true
+            tags: ${{ vars.DOCKERHUB_USERNAME }}/devboards-frontend-advance:latest 
+
+        
+   backend:
+      runs-on: ubuntu-latest      
+      steps: 
+        - name: Checkout code
+          uses: actions/checkout@v7
+
+        - name: Setup Go
+          uses: actions/setup-go@v6
+          with:
+            go-version: '1.23'
+            go-version-file: 'go.mod'
+            check-latest: false
+            cache-dependency-path: go.sum
+
+        - name: Run go Formatter
+          run: go fmt
+          working-directory: backend
+
+        - name: Run go vet
+          run: go vet
+          working-directory: backend
+
+        - name: Run Tests
+          run: go test
+          working-directory: backend
+
+        - name: Docker setup[login]
+          uses: docker/login-action@v4
+          with:
+           username: ${{ vars.DOCKERHUB_USERNAME }}
+           password: ${{ secrets.DOCKERHUB_TOKEN }}
+          
+        - name: Docker build and push 
+          uses: docker/build-push-action@v7
+          with:
+            context: ./backend
+            push: true
+            tags: ${{ vars.DOCKERHUB_USERNAME }}/devboards-backend-advance:latest 
+
+   deploy:
+      needs: [frontend,backend]
+      uses: ./.github/workflows/cd.yml
+      secrets: inherit
+

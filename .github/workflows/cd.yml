@@ -1,0 +1,28 @@
+# Goal:  - To deploy build images from CI Steps once the CI workflow is sucessed .
+# then push image to docker hub
+name: CD
+
+on:
+  workflow_call:
+
+jobs:
+    deploy:
+    
+        runs-on: ubuntu-latest
+        steps:
+          - name: Code Checkout
+            uses: actions/checkout@v7
+
+          - name: copy example.env file to main .env file 
+            run: cp .env.example .env
+     
+          - name: Docker setup[login]
+            uses: docker/login-action@v4
+            with:
+             username: ${{ vars.DOCKERHUB_USERNAME }}
+             password: ${{ secrets.DOCKERHUB_TOKEN }}
+             
+          - name: Deploy the docker containers using docker compose 
+            run: |
+             docker compose pull
+             docker compose up -d 
