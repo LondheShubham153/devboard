@@ -1,0 +1,13 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: devboard-intern-role-binding
+  namespace: devboard
+subjects:
+- kind: User
+  name: devboard-intern # This should be replaced with the actual user name
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: devboard-intern-role
+  apiGroup: rbac.authorization.k8s.io

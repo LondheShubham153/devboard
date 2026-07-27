@@ -1,0 +1,15 @@
+# headless service
+kind: Service
+apiVersion: v1
+metadata:
+  name: postgres
+  namespace: devboard
+spec:
+  clusterIP: None
+  selector:
+    app: devboard-postgres
+  ports:
+  - protocol: TCP
+    port: 5432 # service 
+    targetPort: 5432  # Pod port
+

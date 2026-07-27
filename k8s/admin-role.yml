@@ -1,0 +1,9 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: devboard
+  name: devboard-admin-role
+rules:
+- apiGroups: ["", "apps", "extensions"]
+  resources: ["deployments", "services", "pods"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]

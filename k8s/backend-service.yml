@@ -1,0 +1,13 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: backend
+  namespace: devboard
+spec:
+  selector:
+    app: devboard-backend
+  ports:
+  - protocol: TCP
+    port: 8080 # service 
+    targetPort: 8080  # Pod port
+

@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres-statefulset
+  namespace: devboard
+  labels:
+    app: devboard-postgres
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: devboard-postgres
+  template:
+    metadata:
+      labels:
+        app: devboard-postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:16-alpine
+        ports:
+          - containerPort: 5432
+        env:
+          - name: POSTGRES_USER
+            valueFrom:
+              configMapKeyRef:
+                name: devboard-configmap
+                key: POSTGRES_USER
+          
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: devboard-secrets
+                key: POSTGRES_PASSWORD
+
+          - name: POSTGRES_DB
+            valueFrom:
+              secretKeyRef:
+                name: devboard-secrets
+                key: POSTGRES_DB
+
+          # Use a subdirectory as the data dir. When the volume is a real block
+          # device (EBS), its filesystem root contains a lost+found directory,
+          # and Postgres refuses to initdb into a non-empty mount point.
+          - name: PGDATA
+            value: /var/lib/postgresql/data/pgdata
+
+        readinessProbe:
+          exec:
+            command: ["sh", "-c", "pg_isready -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\""]
+          initialDelaySeconds: 15
+          periodSeconds: 10
+        volumeMounts:
+          - name: init
+            mountPath: /docker-entrypoint-initdb.d
+            readOnly: true
+          - name: data 
+            mountPath: /var/lib/postgresql/data
+
+      volumes:
+        - name: init
+          configMap:
+            name: postgres-init 
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        namespace: devboard
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi
