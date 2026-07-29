@@ -4,7 +4,7 @@ name: Code Quality
 
 on:
     workflow_call:  # you can call this workflow before/after any other workflow
-
+#fdg
 jobs:
     sast:
         runs-on: ubuntu-latest
