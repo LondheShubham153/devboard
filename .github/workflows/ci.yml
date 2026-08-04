@@ -1,43 +1,28 @@
-# Goal: Build the image for DevBoard Frontend and Push to Docker Hub, after linting the code
-name: CI
+name: CI Dev
 
 on:
   push:
-    branches: [master]
+    branches: fix/lint
+  pull_request:
+    branches: fix/lint
 
 jobs:
   code-lint:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v7
+      - name: Clone the code 
+        run: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: "npm" # Automates dependency caching for faster builds
+          node-version: '22' # Specify your project's Node version
+          cache: 'npm'       # Caches npm dependencies for faster runs
 
-      - name: Install Dependencies
-        run: npm install
+      # Step 3: Clean install project dependencies
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Run Lint (Biome)
+      # Step 4: Execute your project's linting script
+      - name: Run Linter
         run: npm run lint
-
-  build-and-push:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v7
-
-      - name: Docker Setup [Login]
-        uses: docker/login-action@v4
-        with:
-          username: ${{ vars.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Docker Build and Push
-        uses: docker/build-push-action@v7
-        with:
-          push: true
-          tags: ${{ vars.DOCKERHUB_USERNAME }}/devboard-fe-master:latest
