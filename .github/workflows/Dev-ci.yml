@@ -1,0 +1,28 @@
+name: CI Dev
+
+on:
+  push:
+    branches: fix/lint
+  pull_request:
+    branches: fix/lint
+
+jobs:
+  code-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone the code 
+        run: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22' # Specify your project's Node version
+          cache: 'npm'       # Caches npm dependencies for faster runs
+
+      # Step 3: Clean install project dependencies
+      - name: Install dependencies
+        run: npm ci
+
+      # Step 4: Execute your project's linting script
+      - name: Run Linter
+        run: npm run lint
