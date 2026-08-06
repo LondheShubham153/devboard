@@ -43,7 +43,7 @@ export function ProjectPage() {
             {source && <SourceBadge source={source} />}
           </div>
           <h1 className="text-[26px] font-semibold leading-none tracking-[-0.5px]">
-            DevBoard MVP
+            DevBoard mana
           </h1>
           <p className="text-[13.5px] text-ink-600 dark:text-ink-400 mt-1.5">
             {allTasks.length} tasks · ship the v1
