@@ -12,11 +12,8 @@ on:
 
 permissions:
   contents: read
-  id-token: write
 
 jobs:
-
-  # ---------------- CI ----------------
 
   code-quality:
     uses: ./.github/workflows/code-quality.yml
@@ -32,15 +29,15 @@ jobs:
 
   sonar-qube:
     uses: ./.github/workflows/sonar-scan.yml
-    secrets: inherit
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
   code-tests:
     uses: ./.github/workflows/code-tests.yml
 
-  # -------- Container Release --------
-
   docker-build-scan-push:
-    uses: ./.github/workflows/docker-push.yml
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     needs:
       - code-quality
       - code-tests
@@ -48,12 +45,9 @@ jobs:
       - docker-checks
       - dependency-checks
       - secret-scanning
-    secrets: inherit
-
-  # ---------------- CD ----------------
-  #
-  # Direct deployment is intentionally disabled.
-  #
-  # GitHub Actions will later update the GitOps
-  # manifests and Argo CD will deploy them.
-  #
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/docker-push.yml
+    secrets:
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}

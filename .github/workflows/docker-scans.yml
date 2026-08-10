@@ -1,12 +1,10 @@
-# Goal - Ensure the docker files and Docker images are security Tested
-
-name: Docker Security Scan
+name: Dockerfile Security Scan
 
 on:
   workflow_call:
 
 jobs:
-  docker-security:
+  dockerfile-security:
     runs-on: ubuntu-latest
 
     strategy:
@@ -18,34 +16,11 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Dockerfile lint
-        uses: hadolint/hadolint-action@v3.1.0
+        uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf
         with:
           dockerfile: ${{ matrix.service }}/Dockerfile
-
-      - name: Build image
-        run: |
-          docker build \
-            -t devboard-${{ matrix.service }}:${{ github.sha }} \
-            ./${{ matrix.service }}
-
-      - name: Trivy image scan
-        uses: aquasecurity/trivy-action@v0.36.0
-        with:
-          image-ref: devboard-${{ matrix.service }}:${{ github.sha }}
-          format: table
-          exit-code: '1'
-          ignore-unfixed: true
-          vuln-type: os,library
-          severity: HIGH,CRITICAL
-
-      - name: Generate SBOM
-        uses: anchore/sbom-action@v0
-        with:
-          image: devboard-${{ matrix.service }}:${{ github.sha }}
-          format: spdx-json
-          artifact-name: ${{ matrix.service }}-sbom.spdx.json
-          output-file: ${{ matrix.service }}-sbom.spdx.json
-          upload-artifact: true
