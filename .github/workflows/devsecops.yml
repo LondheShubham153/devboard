@@ -1,53 +1,59 @@
-# Goal - To Run End to End DevSecOps CI Pipeline
-
 name: DevSecOps
 
 on:
-    push:
-        branches: [master]
+  push:
+    branches:
+      - master
+      - feat/dora-sota
+
+  pull_request:
+    branches:
+      - master
+
+permissions:
+  contents: read
+  id-token: write
 
 jobs:
 
-    ## ---- CI ----
-    # Code Stage 
-    code-quality:
-        uses: ./.github/workflows/code-quality.yml
+  # ---------------- CI ----------------
 
-    # Secret Scanning
-    secret-scanning:
-        uses: ./.github/workflows/secret-scanning.yml
+  code-quality:
+    uses: ./.github/workflows/code-quality.yml
 
-    # Dependency Checks
-    dependency-checks:
-        uses: ./.github/workflows/dependency-scan.yml
+  secret-scanning:
+    uses: ./.github/workflows/secret-scanning.yml
 
-    # Docker Checks
-    docker-checks:
-        uses: ./.github/workflows/docker-scans.yml
-        secrets: inherit 
+  dependency-checks:
+    uses: ./.github/workflows/dependency-scan.yml
 
-    # SonarQube
-    sonar-qube:
-        uses: ./.github/workflows/sonar-scan.yml
-        secrets: inherit
+  docker-checks:
+    uses: ./.github/workflows/docker-scans.yml
 
-    # Code Tests
-    code-tests:
-        uses: ./.github/workflows/code-tests.yml
+  sonar-qube:
+    uses: ./.github/workflows/sonar-scan.yml
+    secrets: inherit
 
-    # push-to-docker-hub:
-    docker-push:
-        uses: ./.github/workflows/docker-push.yml
-        needs: [code-quality,code-tests,sonar-qube,docker-checks,dependency-checks,secret-scanning]
-        secrets: inherit
+  code-tests:
+    uses: ./.github/workflows/code-tests.yml
 
-    ## ---- CD -----
-    deploy:
-        needs: [docker-push]
-        uses: ./.github/workflows/deploy.yml
-        secrets: inherit
+  # -------- Container Release --------
 
-    dast-scan:
-        needs: [deploy]
-        uses: ./.github/workflows/dast.yml
-        secrets: inherit
+  docker-build-scan-push:
+    uses: ./.github/workflows/docker-push.yml
+    needs:
+      - code-quality
+      - code-tests
+      - sonar-qube
+      - docker-checks
+      - dependency-checks
+      - secret-scanning
+    secrets: inherit
+
+  # ---------------- CD ----------------
+  #
+  # Direct deployment is intentionally disabled.
+  #
+  # GitHub Actions will later update the GitOps
+  # manifests and Argo CD will deploy them.
+  #
