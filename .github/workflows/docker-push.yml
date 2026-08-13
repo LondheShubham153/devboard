@@ -2,7 +2,9 @@ name: Docker Build, Scan and Push
 
 on:
   workflow_call:
-
+     secrets:
+      DOCKERHUB_TOKEN:
+        required: true
 jobs:
   build-scan-push:
     runs-on: ubuntu-latest
@@ -69,3 +71,11 @@ jobs:
           IMAGE: ${{ vars.DOCKERHUB_USERNAME }}/devboard-${{ matrix.service }}:${{ github.sha }}
         run: |
           cosign sign --yes "$IMAGE"
+
+  gitops-bump:
+    needs: build-scan-push
+    permissions:
+      contents: write
+    uses: ./.github/workflows/gitops-bump.yml
+    with:
+      image_tag: ${{ github.sha }}
