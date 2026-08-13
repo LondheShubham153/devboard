@@ -1,0 +1,67 @@
+# GitOps handoff: write the freshly-built image tag into the manifests and
+# commit it back to `gitops`. ArgoCD (watching that branch) then syncs.
+#
+# The commit touches only k8s/ + helm/, which are NOT in the pipeline's push
+# `paths:` filter, and commits made with GITHUB_TOKEN don't trigger workflows —
+# so this can't cause a rebuild loop ([skip ci] is a third safety net).
+name: GitOps Image Bump
+
+on:
+  workflow_call:
+    inputs:
+      image_tag:
+        required: true
+        type: string
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout gitops
+        uses: actions/checkout@v7
+        with:
+          ref: gitops
+          
+          
+      - name: Install yq
+        run: |
+          sudo wget -qO /usr/local/bin/yq \
+            https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: Write image refs into manifests
+        env:
+          OWNER: ${{ vars.DOCKERHUB_USERNAME }}
+          TAG: ${{ inputs.image_tag }}
+        run: |
+          set -eu
+          # RAW manifests (if present): surgical sed on the single "image:" line,
+          # keeping the file's formatting/comments untouched.
+          for svc in backend frontend; do
+            f="k8s/${svc}-deployment.yml"
+            [ -f "$f" ] && sed -i "s|image: .*devboard-${svc}:.*|image: ${OWNER}/devboard-${svc}:${TAG}|" "$f"
+          done
+          # HELM values (if present): structured repository/tag — owner written
+          # too, so it can't drift from what CI pushed.
+          v="helm/devboard/values.yaml"
+          if [ -f "$v" ]; then
+            yq -i ".backend.image.repository  = \"${OWNER}/devboard-backend\"    | .backend.image.tag  = \"${TAG}\"" "$v"
+            yq -i ".frontend.image.repository = \"${OWNER}/devboard-frontend\"   | .frontend.image.tag = \"${TAG}\"" "$v"
+          fi
+
+      - name: Commit and push
+        env:
+          TAG: ${{ inputs.image_tag }}
+        run: |
+          set -eu
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet; then
+            echo "Manifests already at ${TAG}; nothing to commit."
+            exit 0
+          fi
+          git add -A
+          git commit -m "ci: deploy ${TAG} [skip ci]"
+          git push origin HEAD:gitops
