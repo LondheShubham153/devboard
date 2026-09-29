@@ -1,0 +1,57 @@
+# ---------------------------------------------------------------------------
+# Kustomize Base — DevBoard Production
+#
+# Build all manifests:  kubectl kustomize k8s/
+# Apply to cluster:     kubectl apply -k k8s/
+# Dry-run validation:   kubectl apply -k k8s/ --dry-run=client
+# ---------------------------------------------------------------------------
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: devboard-prod
+
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: devboard
+      app.kubernetes.io/managed-by: kustomize
+
+# Resources are listed in dependency order:
+# 1. Namespace (must exist before anything else)
+# 2. RBAC (service accounts, roles, bindings)
+# 3. Configuration (configmaps, secrets)
+# 4. Workloads (deployments, services)
+# 5. Networking (ingress)
+# 6. Policies (HPA, PDB)
+resources:
+  # --- Namespace ---
+  - namespace.yaml
+
+  # --- RBAC ---
+  - backend/serviceaccount.yaml
+  - frontend/serviceaccount.yaml
+  - rbac/role.yaml
+  - rbac/rolebinding.yaml
+
+  # --- Configuration ---
+  - configmap.yaml
+  - secret.yaml
+
+  # --- Backend ---
+  - backend/deployment.yaml
+  - backend/service.yaml
+
+  # --- Frontend ---
+  - frontend/deployment.yaml
+  - frontend/service.yaml
+
+  # --- Networking ---
+  - ingress/ingress.yaml
+
+  # --- Autoscaling ---
+  - backend/hpa.yaml
+  - frontend/hpa.yaml
+
+  # --- Disruption Budgets ---
+  - backend/pdb.yaml
+  - frontend/pdb.yaml
+

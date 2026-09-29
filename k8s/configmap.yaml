@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: devboard-config
+  namespace: devboard-prod
+data:
+  APP_ENV: production
+  GIN_MODE: release
+  LOG_LEVEL: info

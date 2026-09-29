@@ -2,12 +2,22 @@
 node_modules/
 dist/
 .vite/
+coverage/
 
 # go
 /backend/devboard-backend
+backend/coverage.*
+backend/test-report.json
+*.out
 
-# env — keep .env local; the committed template is .env.example
+# env & secrets — keep .env local; the committed template is .env.example
 .env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.*
+secrets.*
 
 # misc
 .DS_Store

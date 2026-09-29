@@ -1,3 +1,7 @@
+*.out
+*.txt
+*.json
+*.test
+devboard-backend
 .git
 .DS_Store
-*.md

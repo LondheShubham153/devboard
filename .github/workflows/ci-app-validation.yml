@@ -1,0 +1,115 @@
+name: CI - Frontend and Backend Validation
+
+on:
+  workflow_call:
+    inputs:
+      min_backend_coverage:
+        required: false
+        type: string
+        default: '80'
+
+permissions:
+  contents: read
+#fixed the permissions to only what is needed for this workflow
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  frontend:
+    name: Frontend quality, SCA, build, and tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci --legacy-peer-deps
+        working-directory: frontend
+      - run: npm run lint
+        working-directory: frontend
+      - run: npm run format:check --if-present
+        working-directory: frontend
+      - run: npm audit --audit-level=high
+        working-directory: frontend
+      - run: npm test -- --coverage --reporter=default --reporter=junit --outputFile=test-results/frontend.xml
+        working-directory: frontend
+      - run: npm run build
+        working-directory: frontend
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-test-reports
+          path: |
+            frontend/coverage
+            frontend/test-results
+          if-no-files-found: ignore
+
+  backend:
+    name: Backend quality, SCA, build, and tests
+    runs-on: ubuntu-latest
+    env:
+      GOTOOLCHAIN: local
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.8'
+          cache-dependency-path: backend/go.sum
+      - name: Debug backend toolchain and test inventory
+        run: |
+          set -euxo pipefail
+          go version
+          go env GOVERSION GOOS GOARCH
+          find . -maxdepth 2 -type f -name '*_test.go' -print
+          go list ./...
+        working-directory: backend
+      - run: test -z "$(gofmt -l .)"
+        working-directory: backend
+      - run: go vet ./...
+        working-directory: backend
+      - run: go test ./... -race -covermode=atomic -coverprofile=coverage.out -json > test-report.json
+        working-directory: backend
+      - run: go tool cover -func=coverage.out | tee coverage.txt
+        working-directory: backend
+      - name: Debug backend test and coverage results
+        if: always()
+        working-directory: backend
+        run: |
+          set -euxo pipefail
+          test -f test-report.json && tail -50 test-report.json || true
+          test -f coverage.txt && cat coverage.txt || true
+          test -f coverage.out && wc -l coverage.out || true
+      - name: Enforce backend coverage floor
+        working-directory: backend
+        env:
+          MIN_BACKEND_COVERAGE: ${{ inputs.min_backend_coverage }}
+        run: |
+          set -Eeuo pipefail
+          coverage="$(awk '/^total:/ {gsub("%", "", $3); print $3}' coverage.txt | tail -1)"
+          if [[ -z "$coverage" ]]; then
+            echo 'ERROR: Could not parse total coverage from coverage.txt' >&2
+            cat coverage.txt >&2
+            exit 1
+          fi
+          echo "Backend coverage: ${coverage}%"
+          echo "Minimum required: ${MIN_BACKEND_COVERAGE}%"
+          awk -v actual="$coverage" -v minimum="$MIN_BACKEND_COVERAGE" 'BEGIN { exit !(actual >= minimum) }' || {
+            echo "ERROR: Backend coverage ${coverage}% is below required ${MIN_BACKEND_COVERAGE}%" >&2
+            echo 'Add backend handler/database tests or configure MIN_BACKEND_COVERAGE deliberately.' >&2
+            exit 1
+          }
+      - run: go build ./...
+        working-directory: backend
+      - run: go install golang.org/x/vuln/cmd/govulncheck@v1.8.0 && govulncheck ./...
+        working-directory: backend
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-test-reports
+          path: |
+            backend/test-report.json
+            backend/coverage.out
+            backend/coverage.txt
+          if-no-files-found: ignore

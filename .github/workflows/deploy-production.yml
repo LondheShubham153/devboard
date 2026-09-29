@@ -1,0 +1,31 @@
+name: CD - Protected Production Promotion
+
+on:
+  workflow_call:
+    inputs:
+      frontend_image: {required: true, type: string}
+      backend_image: {required: true, type: string}
+      release_version: {required: true, type: string}
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Production approval and deployment
+    runs-on: self-hosted
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          COMPOSE_FILE=docker-compose.production.yml \
+          ENVIRONMENT=production RELEASE_VERSION="${{ inputs.release_version }}" \
+          FRONTEND_IMAGE="${{ inputs.frontend_image }}" \
+          BACKEND_IMAGE="${{ inputs.backend_image }}" bash scripts/deploy-compose.sh
+      - run: |
+          test -n "$PRODUCTION_URL"
+          curl --fail --retry 10 --retry-delay 5 "$PRODUCTION_URL/health"
+          curl --fail --retry 10 --retry-delay 5 "$PRODUCTION_URL/"
+          curl --fail "$PRODUCTION_URL/api/projects"
+        env:
+          PRODUCTION_URL: ${{ vars.PRODUCTION_URL }}

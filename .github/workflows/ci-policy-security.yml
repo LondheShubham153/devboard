@@ -1,0 +1,77 @@
+name: CI - Policy and Security
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+  security-events: write
+
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  policy:
+    name: Repository policy and Compose validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Validate conventional commit subjects on PRs
+        if: github.event_name == 'pull_request'
+        run: |
+          git log --format='%s' "origin/${{ github.base_ref }}..HEAD" | while IFS= read -r subject; do
+            echo "$subject" | grep -Eq '^(feat|fix|docs|test|refactor|build|ci|chore|perf|revert)(\([^)]+\))?!?: .+' || { echo "Invalid commit: $subject"; exit 1; }
+          done
+      - name: Validate required policy files and Compose
+        env:
+          POSTGRES_DB: devboard_ci
+          POSTGRES_USER: devboard_ci
+          POSTGRES_PASSWORD: ci-only-not-a-secret
+          POSTGRES_URL: postgres://devboard_ci:ci-only-not-a-secret@postgres:5432/devboard_ci?sslmode=disable
+        run: |
+          test -f .github/CODEOWNERS
+          docker compose config --quiet
+
+  secret-scan:
+    name: Secret scanning
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  sast:
+    name: SAST (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    env:
+      GOTOOLCHAIN: local
+    strategy:
+      fail-fast: false
+      matrix: {language: [javascript, go]}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-extended
+      - if: matrix.language == 'javascript'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - if: matrix.language == 'javascript'
+        run: npm ci --legacy-peer-deps
+        working-directory: frontend
+      - if: matrix.language == 'go'
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.8'
+          cache-dependency-path: backend/go.sum
+      - if: matrix.language == 'go'
+        run: go build ./...
+        working-directory: backend
+      - uses: github/codeql-action/analyze@v3

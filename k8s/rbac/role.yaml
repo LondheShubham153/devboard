@@ -1,0 +1,21 @@
+# ---------------------------------------------------------------------------
+# RBAC Role — DevBoard Application
+# Minimal namespace-scoped permissions for application service accounts.
+# Follows least-privilege principles (KSV-0113): restricts access to specific
+# named ConfigMaps and avoids broad namespace secret access.
+# ---------------------------------------------------------------------------
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: devboard-app-role
+  namespace: devboard-prod
+  labels:
+    app.kubernetes.io/part-of: devboard
+    app.kubernetes.io/component: rbac
+rules:
+  # Scoped access to application ConfigMap
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    resourceNames: ["devboard-config"]
+    verbs: ["get", "watch"]
+

@@ -1,0 +1,128 @@
+name: CD - Container Build, Scan, Sign, and Publish
+
+on:
+  workflow_call:
+    inputs:
+      image_namespace:
+        required: true
+        type: string
+      image_tag:
+        required: true
+        type: string
+    outputs:
+      frontend_image:
+        value: ${{ jobs.publish.outputs.frontend_image }}
+      backend_image:
+        value: ${{ jobs.publish.outputs.backend_image }}
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  scan:
+    name: Build, scan, and SBOM (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: {service: [frontend, backend]}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: ${{ matrix.service }}/Dockerfile
+          config: .hadolint.yaml
+      - uses: docker/build-push-action@v7
+        with:
+          context: ./${{ matrix.service }}
+          file: ./${{ matrix.service }}/Dockerfile
+          load: true
+          tags: devboard-${{ matrix.service }}:${{ inputs.image_tag }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+      - name: Generate Trivy SARIF report
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: devboard-${{ matrix.service }}:${{ inputs.image_tag }}
+          scanners: vuln
+          vuln-type: os,library
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: '0'
+          format: sarif
+          output: trivy-${{ matrix.service }}.sarif
+      - name: Enforce Trivy HIGH/CRITICAL gate
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: devboard-${{ matrix.service }}:${{ inputs.image_tag }}
+          scanners: vuln
+          vuln-type: os,library
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: '1'
+          format: table
+          skip-setup-trivy: true
+      - uses: anchore/sbom-action@v0
+        with:
+          image: devboard-${{ matrix.service }}:${{ inputs.image_tag }}
+          artifact-name: sbom-${{ matrix.service }}.spdx.json
+          format: spdx-json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: container-reports-${{ matrix.service }}
+          path: |
+            trivy-${{ matrix.service }}.sarif
+            sbom-${{ matrix.service }}.spdx.json
+          if-no-files-found: ignore
+
+  publish:
+    name: Sign and publish immutable images
+    needs: [scan]
+    runs-on: ubuntu-latest
+    outputs:
+      frontend_image: ${{ steps.digests.outputs.frontend }}
+      backend_image: ${{ steps.digests.outputs.backend }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Docker Hub credentials
+        env:
+          DOCKERHUB_USERNAME: ${{ inputs.image_namespace }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          set -Eeuo pipefail
+          test -n "$DOCKERHUB_USERNAME" || { echo "DOCKERHUB_USERNAME is empty"; exit 1; }
+          test -n "$DOCKERHUB_TOKEN" || { echo "DOCKERHUB_TOKEN secret is missing"; exit 1; }
+      - uses: docker/login-action@v4
+        with:
+          registry: docker.io
+          username: ${{ inputs.image_namespace }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - uses: docker/setup-buildx-action@v3
+      - id: images
+        run: |
+          echo "frontend=docker.io/${{ inputs.image_namespace }}/devboard-frontend:${{ inputs.image_tag }}" >> "$GITHUB_OUTPUT"
+          echo "backend=docker.io/${{ inputs.image_namespace }}/devboard-backend:${{ inputs.image_tag }}" >> "$GITHUB_OUTPUT"
+      - uses: docker/build-push-action@v7
+        id: published_frontend
+        with:
+          context: ./frontend
+          push: true
+          tags: ${{ steps.images.outputs.frontend }}
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,mode=max,scope=frontend
+      - uses: docker/build-push-action@v7
+        id: published_backend
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ steps.images.outputs.backend }}
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
+      - id: digests
+        run: |
+          echo "frontend=${{ steps.images.outputs.frontend }}@${{ steps.published_frontend.outputs.digest }}" >> "$GITHUB_OUTPUT"
+          echo "backend=${{ steps.images.outputs.backend }}@${{ steps.published_backend.outputs.digest }}" >> "$GITHUB_OUTPUT"
+      - uses: sigstore/cosign-installer@v3
+      - run: cosign sign --yes "${{ steps.digests.outputs.frontend }}" "${{ steps.digests.outputs.backend }}"

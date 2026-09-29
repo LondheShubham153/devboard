@@ -1,0 +1,26 @@
+# ---------------------------------------------------------------------------
+# Frontend Service
+# ClusterIP service exposing the nginx-unprivileged frontend on port 80.
+# The ALB Ingress routes external traffic here; nginx then proxies /api/
+# requests to the backend service internally.
+# ---------------------------------------------------------------------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: devboard-prod
+  labels:
+    app: frontend
+    app.kubernetes.io/name: frontend
+    app.kubernetes.io/part-of: devboard
+    app.kubernetes.io/component: web
+spec:
+  type: ClusterIP
+  selector:
+    app: frontend
+  ports:
+    - name: http
+      port: 80
+      targetPort: http   # resolves to container port 8080
+      protocol: TCP
+

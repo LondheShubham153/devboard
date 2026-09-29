@@ -1,0 +1,3 @@
+# Local Kubernetes development overlay / manifest
+# Placeholder for local dev environments (e.g., Minikube / Kind).
+# Production deployment is managed via k8s/kustomization.yaml.

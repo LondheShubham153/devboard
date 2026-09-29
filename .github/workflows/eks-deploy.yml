@@ -1,0 +1,168 @@
+# =============================================================================
+# EKS — Deploy to Production
+#
+# Deploys the application to EKS by updating deployment images and waiting
+# for successful rollout. Includes smoke tests and automatic rollback on failure.
+#
+# Trigger: After ECR build succeeds, or manual dispatch
+# =============================================================================
+name: "EKS — Deploy to Production"
+
+on:
+  workflow_run:
+    workflows: ["EKS — Build & Push to ECR"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Image tag to deploy (Git SHA short)"
+        required: true
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: "us-east-1"
+  EKS_CLUSTER_NAME: "devboard-production"
+  NAMESPACE: "devboard-prod"
+
+jobs:
+  deploy:
+    name: Deploy to EKS
+    runs-on: ubuntu-latest
+    # Only run if triggered manually or if the build workflow succeeded
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    # Requires manual approval via GitHub environment protection rules
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ── AWS Authentication ─────────────────────────────────────────────
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_EKS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # ── kubectl Setup ──────────────────────────────────────────────────
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: "v1.31.0"
+
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig \
+            --region ${{ env.AWS_REGION }} \
+            --name ${{ env.EKS_CLUSTER_NAME }}
+
+      # ── Determine Image Tag ────────────────────────────────────────────
+      - name: Set image tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ inputs.image_tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=$(echo ${{ github.event.workflow_run.head_sha }} | cut -c1-7)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Login to ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # ── Deploy ─────────────────────────────────────────────────────────
+      - name: Update backend deployment image
+        run: |
+          kubectl set image deployment/backend \
+            backend=${{ steps.ecr-login.outputs.registry }}/devboard-backend:${{ steps.tag.outputs.tag }} \
+            -n ${{ env.NAMESPACE }}
+
+      - name: Update frontend deployment image
+        run: |
+          kubectl set image deployment/frontend \
+            frontend=${{ steps.ecr-login.outputs.registry }}/devboard-frontend:${{ steps.tag.outputs.tag }} \
+            -n ${{ env.NAMESPACE }}
+
+      # ── Wait for Rollout ───────────────────────────────────────────────
+      - name: Wait for backend rollout
+        run: |
+          kubectl rollout status deployment/backend \
+            -n ${{ env.NAMESPACE }} \
+            --timeout=300s
+
+      - name: Wait for frontend rollout
+        run: |
+          kubectl rollout status deployment/frontend \
+            -n ${{ env.NAMESPACE }} \
+            --timeout=300s
+
+      # ── Smoke Tests ────────────────────────────────────────────────────
+      - name: Smoke test — backend health
+        run: |
+          # Port-forward and test the backend health endpoint
+          kubectl port-forward svc/backend 18080:8080 -n ${{ env.NAMESPACE }} &
+          PF_PID=$!
+          sleep 5
+
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:18080/health)
+          kill $PF_PID || true
+
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "❌ Backend health check failed (HTTP $HTTP_CODE)"
+            exit 1
+          fi
+          echo "✅ Backend health check passed (HTTP $HTTP_CODE)"
+
+      - name: Smoke test — frontend
+        run: |
+          kubectl port-forward svc/frontend 18081:80 -n ${{ env.NAMESPACE }} &
+          PF_PID=$!
+          sleep 5
+
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:18081/)
+          kill $PF_PID || true
+
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "❌ Frontend health check failed (HTTP $HTTP_CODE)"
+            exit 1
+          fi
+          echo "✅ Frontend health check passed (HTTP $HTTP_CODE)"
+
+      # ── Verify Pod Status ──────────────────────────────────────────────
+      - name: Verify pod status
+        run: |
+          echo "=== Pod Status ==="
+          kubectl get pods -n ${{ env.NAMESPACE }} -o wide
+
+          echo ""
+          echo "=== HPA Status ==="
+          kubectl get hpa -n ${{ env.NAMESPACE }}
+
+          echo ""
+          echo "=== Ingress Status ==="
+          kubectl get ingress -n ${{ env.NAMESPACE }}
+
+      # ── Rollback on Failure ────────────────────────────────────────────
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          echo "⚠️ Deployment failed — initiating rollback..."
+
+          kubectl rollout undo deployment/backend -n ${{ env.NAMESPACE }}
+          kubectl rollout undo deployment/frontend -n ${{ env.NAMESPACE }}
+
+          echo "Waiting for rollback to complete..."
+          kubectl rollout status deployment/backend -n ${{ env.NAMESPACE }} --timeout=300s
+          kubectl rollout status deployment/frontend -n ${{ env.NAMESPACE }} --timeout=300s
+
+          echo "✅ Rollback completed"
+          echo ""
+          echo "=== Current Pod Status ==="
+          kubectl get pods -n ${{ env.NAMESPACE }}
+

@@ -1,0 +1,79 @@
+name: Enterprise DevSecOps Pipeline
+
+on:
+  pull_request:
+    branches: [development, staging, main, master]
+  push:
+    branches: [development, staging, main, master]
+    tags: ['v*.*.*']
+  workflow_dispatch:
+    inputs:
+      deploy_production:
+        description: Promote the tested immutable release to production
+        required: true
+        type: boolean
+        default: false
+      rollback:
+        description: Restore the previous known-good production release
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  security-events: write
+  id-token: write
+
+env:
+  NODE_VERSION: '22'
+
+concurrency:
+  group: devsecops-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  policy-security:
+    if: inputs.rollback != true
+    uses: ./.github/workflows/ci-policy-security.yml
+    secrets: inherit
+
+  app-validation:
+    if: inputs.rollback != true
+    uses: ./.github/workflows/ci-app-validation.yml
+    with:
+      min_backend_coverage: ${{ vars.MIN_BACKEND_COVERAGE || '80' }}
+    secrets: inherit
+
+  container-release:
+    if: github.event_name != 'pull_request' && inputs.rollback != true
+    needs: [policy-security, app-validation]
+    uses: ./.github/workflows/container-release.yml
+    with:
+      image_namespace: avnish2
+      image_tag: ${{ github.sha }}
+    secrets: inherit
+#avnish ranjan
+  staging:
+    if: github.event_name != 'pull_request' && inputs.rollback != true
+    needs: [container-release]
+    uses: ./.github/workflows/deploy-staging.yml
+    with:
+      frontend_image: ${{ needs.container-release.outputs.frontend_image }}
+      backend_image: ${{ needs.container-release.outputs.backend_image }}
+      release_version: ${{ github.sha }}
+    secrets: inherit
+
+  production:
+    if: ((github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v'))) || (github.event_name == 'workflow_dispatch' && inputs.deploy_production)) && inputs.rollback != true
+    needs: [container-release, staging]
+    uses: ./.github/workflows/deploy-production.yml
+    with:
+      frontend_image: ${{ needs.container-release.outputs.frontend_image }}
+      backend_image: ${{ needs.container-release.outputs.backend_image }}
+      release_version: ${{ github.sha }}
+    secrets: inherit
+
+  rollback:
+    if: github.event_name == 'workflow_dispatch' && inputs.rollback == true
+    uses: ./.github/workflows/rollback-production.yml
+    secrets: inherit

@@ -1,0 +1,24 @@
+name: CD - Emergency Rollback
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  rollback:
+    name: Restore previous known-good release
+    runs-on: self-hosted
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          ROLLBACK=true COMPOSE_FILE=docker-compose.production.yml \
+          ENVIRONMENT=production RELEASE_VERSION=rollback \
+          FRONTEND_IMAGE=unused BACKEND_IMAGE=unused bash scripts/deploy-compose.sh
+      - run: |
+          test -n "$PRODUCTION_URL"
+          curl --fail --retry 10 --retry-delay 5 "$PRODUCTION_URL/health"
+        env:
+          PRODUCTION_URL: ${{ vars.PRODUCTION_URL }}

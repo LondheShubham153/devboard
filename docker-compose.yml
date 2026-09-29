@@ -1,54 +1,122 @@
-# DevBoard (advanced) — UI + Go backend + Postgres. That's the whole stack.
-#
-#   browser ──▶ frontend (vite preview :4173) ──/api──▶ backend (Go) ──▶ postgres
-#
-# Every configurable value lives in .env — Compose loads it automatically and
-# fills in the ${...} placeholders below. Edit .env, not this file, to change
-# credentials or ports. This way learners can see in one place exactly which
-# variables get injected into the db and the backend.
-#
-# Bring it up:  docker compose up --build
-# Then open:    http://localhost:8080   (FRONTEND_HOST_PORT)
-
 services:
-  postgres:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-      - ./init/postgres:/docker-entrypoint-initdb.d:ro
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-    ports:
-      - "${POSTGRES_HOST_PORT}:5432"
 
-  backend:
-    # build = local; image = the tag CI pushes and CD pulls (IMAGE_TAG, else latest).
-    build: ./backend
-    image: trainwithshubham/devboard-backend:${IMAGE_TAG:-latest}
+  # =========================
+  # PostgreSQL
+  # =========================
+  postgres:
+    image: postgres:17-alpine
+
+    restart: unless-stopped
+
     environment:
-      PORT: "${BACKEND_PORT}"
-      # Built from the Postgres vars above so the credentials live in one place.
-      POSTGRES_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable"
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB must be set}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER must be set}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+
+    ports:
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-5432}:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init/postgres:/docker-entrypoint-initdb.d:ro
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:?POSTGRES_USER must be set} -d ${POSTGRES_DB:?POSTGRES_DB must be set}"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+    networks:
+      - devboard-network
+
+
+  # =========================
+  # Go Backend
+  # =========================
+  backend:
+    image: ${BACKEND_IMAGE:-devboard-backend:local}
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+
+    restart: unless-stopped
+
+    ports:
+      - "127.0.0.1:${BACKEND_HOST_PORT:-8081}:8080"
+
+    environment:
+      POSTGRES_URL: ${POSTGRES_URL:?POSTGRES_URL must be set}
+      PORT: ${BACKEND_PORT:-8080}
+
     depends_on:
       postgres:
         condition: service_healthy
-    ports:
-      - "${BACKEND_HOST_PORT}:${BACKEND_PORT}"   # host:container — direct curl/debug; the UI uses the gateway
 
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://127.0.0.1:8080/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+    read_only: true
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+
+    networks:
+      - devboard-network
+
+
+  # =========================
+  # React Frontend + Nginx
+  # =========================
   frontend:
-    build: ./frontend
-    image: trainwithshubham/devboard-frontend:${IMAGE_TAG:-latest}
-    depends_on:
-      - backend
-    ports:
-      - "${FRONTEND_HOST_PORT}:4173"   # vite preview serves on 4173 inside the container
+    image: ${FRONTEND_IMAGE:-devboard-frontend:local}
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
 
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${FRONTEND_HOST_PORT:-3000}:8080"
+
+    depends_on:
+      backend:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://127.0.0.1:8080/"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx
+      - /var/run
+      - /tmp
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+
+    networks:
+      - devboard-network
+
+
+# =========================
+# Volumes
+# =========================
 volumes:
-  pgdata:
+  postgres_data:
+
+
+# =========================
+# Network
+# =========================
+networks:
+  devboard-network:
+    driver: bridge

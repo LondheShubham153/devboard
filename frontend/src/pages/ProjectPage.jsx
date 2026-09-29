@@ -4,7 +4,7 @@ import {
   IconPlus, IconDatabase, IconBolt,
   IconLayoutKanban, IconList,
 } from '@tabler/icons-react';
-import { useTasks } from '../hooks/useTasks';
+import { useTasks, useProjects } from '../hooks/useTasks';
 import { Button } from '../components/ui/Button';
 import { TaskList } from '../components/tasks/TaskList';
 import { TaskCreateModal } from '../components/tasks/TaskCreateModal';
@@ -17,6 +17,10 @@ export function ProjectPage() {
   const { id } = useParams();
   const projectId = Number(id);
   const { data, isLoading } = useTasks(projectId);
+  const { data: projectsData } = useProjects();
+  const currentProject = projectsData?.projects?.find((p) => p.id === projectId);
+  const projectName = currentProject?.name || (projectId === 1 ? 'DevBoard MVP' : `Project #${projectId}`);
+  const projectDesc = currentProject?.description || 'ship the v1';
   const [filter, setFilter] = useState('all');
   const [modal, setModal] = useState(false);
   const [view, setView] = useState(() => localStorage.getItem(VIEW_KEY) || 'board');
@@ -43,10 +47,10 @@ export function ProjectPage() {
             {source && <SourceBadge source={source} />}
           </div>
           <h1 className="text-[26px] font-semibold leading-none tracking-[-0.5px]">
-            DevBoard MVP
+            {projectName}
           </h1>
           <p className="text-[13.5px] text-ink-600 dark:text-ink-400 mt-1.5">
-            {allTasks.length} tasks · ship the v1
+            {allTasks.length} tasks · {projectDesc}
           </p>
         </div>
         <div className="flex items-center gap-2">

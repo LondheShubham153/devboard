@@ -1,0 +1,81 @@
+# ---------------------------------------------------------------------------
+# AWS ALB Ingress — DevBoard Production
+#
+# Routes ALL external traffic through the frontend nginx service.
+# Nginx handles /api/ proxy to the backend internally, preserving the
+# existing request-flow architecture without application code changes.
+#
+# Architecture:
+#   Internet → ALB (HTTPS:443) → Ingress → frontend:80 → nginx:8080
+#                                                           ↓
+#                                              /api/* → backend:8080
+#                                              /*     → static files
+# ---------------------------------------------------------------------------
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: devboard-ingress
+  namespace: devboard-prod
+  labels:
+    app.kubernetes.io/part-of: devboard
+    app.kubernetes.io/component: ingress
+  annotations:
+    # ── ALB Controller ──────────────────────────────────────────────────
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+
+    # ── Listeners ───────────────────────────────────────────────────────
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: "443"
+
+    # ── TLS / Certificate ──────────────────────────────────────────────
+    # Replace with your ACM certificate ARN
+    alb.ingress.kubernetes.io/certificate-arn: "<ACM_CERTIFICATE_ARN>"
+    alb.ingress.kubernetes.io/ssl-policy: ELBSecurityPolicy-TLS13-1-2-2021-06
+
+    # ── Health Checks ──────────────────────────────────────────────────
+    # ALB health-checks the frontend nginx root path
+    alb.ingress.kubernetes.io/healthcheck-path: /
+    alb.ingress.kubernetes.io/healthcheck-port: traffic-port
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: "15"
+    alb.ingress.kubernetes.io/healthcheck-timeout-seconds: "5"
+    alb.ingress.kubernetes.io/healthy-threshold-count: "2"
+    alb.ingress.kubernetes.io/unhealthy-threshold-count: "3"
+    alb.ingress.kubernetes.io/success-codes: "200"
+
+    # ── Target Group ───────────────────────────────────────────────────
+    alb.ingress.kubernetes.io/target-group-attributes: >-
+      stickiness.enabled=false,
+      deregistration_delay.timeout_seconds=30
+
+    # ── Load Balancer ──────────────────────────────────────────────────
+    alb.ingress.kubernetes.io/load-balancer-attributes: >-
+      idle_timeout.timeout_seconds=60,
+      routing.http2.enabled=true,
+      routing.http.drop_invalid_header_fields.enabled=true
+
+    # ── Tags (for cost tracking / identification) ──────────────────────
+    alb.ingress.kubernetes.io/tags: >-
+      Project=devboard,Environment=production,ManagedBy=kubernetes
+spec:
+  ingressClassName: alb
+  rules:
+    # Replace <DOMAIN_NAME> with your actual domain (e.g. devboard.example.com)
+    # Remove the host field entirely to accept traffic on any hostname
+    - host: "<DOMAIN_NAME>"
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80
+  # TLS is terminated at the ALB using the ACM certificate above.
+  # This section tells the Ingress controller which hosts to serve.
+  tls:
+    - hosts:
+        - "<DOMAIN_NAME>"
+

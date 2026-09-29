@@ -1,0 +1,6 @@
+# Security-sensitive changes require review from the platform/security owners.
+* @devboard/platform
+.github/ @devboard/platform
+docker-compose.yml @devboard/platform
+**/Dockerfile @devboard/platform
+init/ @devboard/platform

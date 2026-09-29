@@ -1,0 +1,20 @@
+# ---------------------------------------------------------------------------
+# Frontend PodDisruptionBudget
+# Ensures at least 1 frontend pod remains available during voluntary
+# disruptions (node drain, cluster upgrade, spot reclaim).
+# ---------------------------------------------------------------------------
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: frontend-pdb
+  namespace: devboard-prod
+  labels:
+    app: frontend
+    app.kubernetes.io/name: frontend
+    app.kubernetes.io/part-of: devboard
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: frontend
+

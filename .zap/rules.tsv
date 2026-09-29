@@ -1,0 +1,9 @@
+# Non-blocking informational findings for this SPA baseline scan.
+# SRI is not generated for Vite's local hashed bundles in this build.
+90003	IGNORE	(Sub Resource Integrity Attribute Missing)
+# COEP can interfere with third-party font assets and is not required by this app.
+90004	IGNORE	(Cross-Origin-Embedder-Policy Header Missing or Invalid)
+# This is a classification/info rule, not a vulnerability.
+10109	IGNORE	(Modern Web Application)
+# no-store is intentional for the SPA shell; hashed static assets are immutable.
+10049	IGNORE	(Non-Storable Content)
