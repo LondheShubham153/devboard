@@ -19,7 +19,7 @@ spec:
       automountServiceAccountToken: false
       containers:
         - name: devboard-ai-service
-          image: trainwithshubham/devboard-ai-service:sha-4945e5b
+          image: trainwithshubham/devboard-ai-service:sha-d4411ab
           ports:
             - containerPort: 3005
           env:
