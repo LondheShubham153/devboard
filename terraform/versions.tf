@@ -7,7 +7,7 @@ terraform {
       version = "~> 6.0"
     }
 
-    # helm 3.x uses attribute syntax; kubernetes is pinned to v2, which still uses blocks.
+    # helm 3.x uses attribute syntax. kubernetes 3.x only manages the gp3 StorageClass here.
     helm = {
       source  = "hashicorp/helm"
       version = "~> 3.0"
@@ -15,7 +15,7 @@ terraform {
 
     kubernetes = {
       source  = "hashicorp/kubernetes"
-      version = "~> 2.38"
+      version = "~> 3.4"
     }
   }
 }
