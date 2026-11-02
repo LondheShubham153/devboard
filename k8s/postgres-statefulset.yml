@@ -40,6 +40,9 @@ spec:
                 name: devboard-secrets
                 key: POSTGRES_DB
 
+          # Use a subdirectory as the data dir. When the volume is a real block
+          # device (EBS), its filesystem root contains a lost+found directory,
+          # and Postgres refuses to initdb into a non-empty mount point.
           - name: PGDATA
             value: /var/lib/postgresql/data/pgdata
 
