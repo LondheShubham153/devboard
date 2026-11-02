@@ -46,5 +46,5 @@ jobs:
 
             - name: Run Ruff
               run: |
-                pip install --only-binary :all: ruff==0.16.0
+                pip install --require-hashes --only-binary :all: -r ai-service/requirements-dev.lock
                 ruff check ai-service

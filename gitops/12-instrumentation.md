@@ -65,17 +65,19 @@ that matches a library you import, patches them, then execs your real command.
 Flask and httpx are wrapped *before* `app/main.py` is ever imported.
 
 So the change set is: two lines in `requirements.txt` (the distro and the
-exporter), one `RUN opentelemetry-bootstrap -a install` in the Dockerfile, one
-word in the CMD, and a block of env vars in the Deployment.
+exporter), a hashed lock file, one word in the CMD, and a block of env vars in
+the Deployment.
 
-`opentelemetry-bootstrap` scans the installed packages and installs the matching
+`opentelemetry-bootstrap` scans the installed packages and picks the matching
 instrumentation for each one (Flask, httpx, requests, urllib3 ...). Nobody
-maintains a list by hand, and a new library gets traced on the next build. It
-runs at **build** time, never at container start. The cost is that the image
-contents depend on the registry at build time, so CI uploads the resolved set
-(`opentelemetry-bootstrap -a requirements`) as an artifact. Probe and scrape
-noise is dropped with `OTEL_PYTHON_EXCLUDED_URLS=health,metrics`. **The code did not change. The
-entrypoint did.** That is what "zero-code instrumentation" actually means.
+maintains a list by hand: edit `requirements.txt`, run `ai-service/lock.sh`, and
+bootstrap's output is folded into `requirements.lock` with hashes. The image
+installs only from that lock (`--require-hashes --only-binary :all:`), so builds
+are reproducible and a swapped package fails the hash check. The Dockerfile also
+re-runs `opentelemetry-bootstrap -a requirements` and fails the build if it
+wants a package the lock lacks, so the lock cannot silently go stale. CI uses
+`requirements-dev.lock` (the same set plus pytest, ruff and pip-audit). Probe
+and scrape noise is dropped with `OTEL_PYTHON_EXCLUDED_URLS=health,metrics`.
 
 Two choices in there worth explaining:
 
