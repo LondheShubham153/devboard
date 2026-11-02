@@ -16,7 +16,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: OWASP ZAP Baseline Scan
-        uses: zaproxy/action-baseline@v0.14.0
+        uses: zaproxy/action-baseline@v0.15.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           target: ${{ inputs.target_url }}
