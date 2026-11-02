@@ -4,7 +4,7 @@
 setuptools==80.9.0
 flask==3.0.3
 gunicorn==22.0.0
-httpx==0.27.2
+httpx==0.28.1
 prometheus-client==0.20.0
 
 # --- OpenTelemetry: zero-code instrumentation --------------------------------
