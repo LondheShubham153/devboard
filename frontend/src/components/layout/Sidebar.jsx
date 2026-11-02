@@ -2,14 +2,15 @@ import { useMemo } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   IconLayoutDashboard, IconCheck, IconChartBar, IconBell,
-  IconSettings, IconChevronRight, IconFolder,
+  IconSettings, IconChevronRight, IconFolder, IconSparkles,
 } from '@tabler/icons-react';
 import { Logo } from '../ui/Logo';
 import { useProjects } from '../../hooks/useTasks';
 
 const NAV = [
-  { to: '/',           label: 'Dashboard', icon: IconLayoutDashboard },
-  { to: '/projects/1', label: 'Tasks',     icon: IconCheck },
+  { to: '/',           label: 'Dashboard',    icon: IconLayoutDashboard },
+  { to: '/projects/1', label: 'Tasks',        icon: IconCheck },
+  { to: '/ai',         label: 'AI Assistant', icon: IconSparkles, accent: true },
 ];
 
 const SOON = [

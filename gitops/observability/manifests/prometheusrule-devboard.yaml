@@ -1,0 +1,70 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: devboard
+  namespace: observability
+  labels:
+    app.kubernetes.io/part-of: devboard
+spec:
+  groups:
+    - name: ollama
+      rules:
+        - alert: AIModelStorageUnbound
+          expr: kube_persistentvolumeclaim_status_phase{namespace="ollama",phase="Pending"} == 1
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "ollama-models PVC is Pending — the model server cannot start"
+            description: >-
+              A PersistentVolumeClaim stuck Pending almost always means no
+              StorageClass. EKS does not mark gp2 default, so a PVC that names
+              no class waits forever.
+            runbook: "kubectl -n ollama describe pvc ollama-models — then check storageClassName in gitops/ollama/pvc.yaml"
+
+        - alert: AIModelServerDown
+          expr: kube_deployment_status_replicas_available{namespace="ollama",deployment="ollama"} == 0
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Ollama has no available replicas — every /api/ai call will fail"
+            runbook: "kubectl -n ollama get pvc,pod && kubectl -n ollama logs deploy/ollama"
+
+        - alert: AIModelServerThrottled
+          expr: |
+            rate(container_cpu_cfs_throttled_seconds_total{namespace="ollama",container="ollama"}[5m]) > 0.5
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Ollama is CPU-throttled — generation will be very slow"
+            description: >-
+              Either the container's CPU limit is too low, or the node has
+              exhausted its T3 burst credits. The fix for sustained load is a
+              non-burstable instance family (c5/c6i), not a bigger limit.
+
+    - name: devboard-app
+      rules:
+        - alert: AIServiceHighErrorRate
+          expr: |
+            sum(rate(traces_span_metrics_calls_total{service_name="ai-service",status_code="STATUS_CODE_ERROR"}[5m]))
+              /
+            sum(rate(traces_span_metrics_calls_total{service_name="ai-service"}[5m]))
+              > 0.1
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "More than 10% of AI requests are failing"
+            runbook: "Open Tempo, filter service.name=ai-service status=error, read the deepest span"
+
+        - alert: PostgresSecretMissing
+          expr: |
+            kube_pod_container_status_waiting_reason{namespace=~"devboard|devboard-helm",reason="CreateContainerConfigError"} == 1
+          for: 10m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Pods cannot start — devboard-secrets is probably not being synced"
+            runbook: "kubectl -n devboard describe externalsecret devboard-secrets"

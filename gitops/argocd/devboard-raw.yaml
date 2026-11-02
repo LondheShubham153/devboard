@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: devboard-raw
+  namespace: argocd
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/LondheShubham153/devboard.git
+    targetRevision: mega-project
+    path: k8s
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: devboard
+
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
+
+  syncPolicy:
+    automated:
+      prune: true      # delete resources removed from Git
+      selfHeal: true   # revert manual drift back to Git
+    syncOptions:
+      - CreateNamespace=true

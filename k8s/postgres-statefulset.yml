@@ -24,8 +24,8 @@ spec:
         env:
           - name: POSTGRES_USER
             valueFrom:
-              configMapKeyRef:
-                name: devboard-configmap
+              secretKeyRef:
+                name: devboard-secrets
                 key: POSTGRES_USER
           
           - name: POSTGRES_PASSWORD
@@ -65,10 +65,10 @@ spec:
   volumeClaimTemplates:
     - metadata:
         name: data
-        namespace: devboard
       spec:
         accessModes:
           - ReadWriteOnce
+        storageClassName: gp3
         resources:
           requests:
             storage: 1Gi

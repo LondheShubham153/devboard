@@ -1,0 +1,25 @@
+{{- if and .Values.gateway.enabled .Values.gateway.tls.enabled .Values.gateway.tls.httpsRedirect .Values.gateway.hostname }}
+# sectionName is required, or this attaches to :443 too and loops.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ include "devboard.fullname" . }}-https-redirect
+  labels:
+    {{- include "devboard.labels" . | nindent 4 }}
+spec:
+  parentRefs:
+    - name: {{ include "devboard.fullname" . }}-gateway
+      sectionName: http
+  hostnames:
+    - {{ .Values.gateway.hostname | quote }}
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      filters:
+        - type: RequestRedirect
+          requestRedirect:
+            scheme: https
+            statusCode: 301
+{{- end }}

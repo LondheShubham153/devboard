@@ -1,0 +1,64 @@
+fullnameOverride: loki
+
+deploymentMode: SingleBinary
+
+loki:
+  auth_enabled: false          # no multi-tenancy on a learning cluster
+
+  commonConfig:
+    replication_factor: 1
+
+  storage:
+    type: filesystem
+
+  schemaConfig:
+    configs:
+      - from: "2024-04-01"
+        store: tsdb
+        object_store: filesystem
+        schema: v13
+        index:
+          prefix: index_
+          period: 24h
+
+  limits_config:
+    retention_period: 72h
+    allow_structured_metadata: true
+
+  server:
+    http_listen_port: 3100
+
+singleBinary:
+  replicas: 1
+  persistence:
+    enabled: true
+    storageClass: gp3
+    size: 10Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+
+write:
+  replicas: 0
+read:
+  replicas: 0
+backend:
+  replicas: 0
+
+chunksCache:
+  enabled: false
+resultsCache:
+  enabled: false
+
+gateway:
+  enabled: false
+lokiCanary:
+  enabled: false
+test:
+  enabled: false
+minio:
+  enabled: false

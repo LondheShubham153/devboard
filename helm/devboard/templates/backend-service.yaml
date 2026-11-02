@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.backend.serviceName }}
+  labels:
+    {{- include "devboard.labels" . | nindent 4 }}
+spec:
+  selector:
+    app: devboard-backend
+  ports:
+    - name: http
+      protocol: TCP
+      port: {{ .Values.backend.port }}
+      targetPort: {{ .Values.backend.port }}

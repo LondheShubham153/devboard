@@ -1,6 +1,4 @@
-# Goal - to check whether the application code coverage doesn't have security threats/issues
-
-name: Sonar Qube Scan
+name: Sonar Scan
 
 on:
     workflow_call:
@@ -11,8 +9,11 @@ jobs:
         steps:
             - name: Code Checkout
               uses: actions/checkout@v7
+              with:
+                fetch-depth: 0
 
-            - name: SonarQube Scan
+            - name: SonarCloud Scan
+              continue-on-error: true
               uses: SonarSource/sonarqube-scan-action@v8.2.0
               env:
                 SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

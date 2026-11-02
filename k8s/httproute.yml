@@ -1,0 +1,64 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: devboard-route
+  namespace: devboard
+spec:
+  parentRefs:
+    - name: devboard-gateway
+  rules:
+    # Exact, not PathPrefix: a prefix once exposed /api/ai/metrics. The vite proxy was a second door.
+    - matches:
+        - path:
+            type: Exact
+            value: /api/ai/summarise
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplaceFullPath
+              replaceFullPath: /summarise
+      timeouts:
+        request: "300s"
+        backendRequest: "300s"
+      backendRefs:
+        - name: ai-service
+          port: 3005
+
+    - matches:
+        - path:
+            type: Exact
+            value: /api/ai/ask
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplaceFullPath
+              replaceFullPath: /ask
+      timeouts:
+        request: "300s"
+        backendRequest: "300s"
+      backendRefs:
+        - name: ai-service
+          port: 3005
+
+    - matches:
+        - path:
+            type: Exact
+            value: /api/ai/health
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplaceFullPath
+              replaceFullPath: /health
+      backendRefs:
+        - name: ai-service
+          port: 3005
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: devboard-frontend-service
+          port: 8080

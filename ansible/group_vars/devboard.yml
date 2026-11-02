@@ -1,0 +1,20 @@
+---
+# Every setting lives here, so all four playbooks read the same values.
+
+aws_region: us-west-2
+
+# The user you SSH in as. Ubuntu AMIs use `ubuntu`.
+login_user: ubuntu
+
+# Match this to kubernetes_version in terraform/terraform.tfvars.
+kubectl_version: v1.34
+
+# Your AWS keys. Leave empty if the EC2 instance has an IAM role attached,
+# which is safer. To encrypt them instead:
+#   ansible-vault encrypt_string 'AKIA...' --name aws_access_key
+aws_access_key: ""
+aws_secret_key: ""
+
+# Change this to YOUR fork.
+repo_url: https://github.com/LondheShubham153/devboard.git
+repo_branch: mega-project

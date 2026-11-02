@@ -7,7 +7,8 @@ spec:
   selector:
     app: devboard-backend
   ports:
-  - protocol: TCP
-    port: 8080 # service 
+  - name: http
+    protocol: TCP
+    port: 8080 # service
     targetPort: 8080  # Pod port
 

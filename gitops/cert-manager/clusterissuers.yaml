@@ -1,0 +1,40 @@
+# Staging first: production allows only 5 auth FAILURES per hostname per hour.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+spec:
+  acme:
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    email: trainwithshubham@gmail.com
+    # ClusterIssuer, so this lands in the cert-manager namespace, not devboard.
+    privateKeySecretRef:
+      name: letsencrypt-staging-account-key
+    solvers:
+      - http01:
+          # The solver HTTPRoute is created in the CERTIFICATE's namespace, so the
+          # Certificate must stay in devboard or the Gateway rejects it.
+          gatewayHTTPRoute:
+            parentRefs:
+              - kind: Gateway
+                name: devboard-gateway
+                namespace: devboard
+                # No sectionName: attaches to :80 and :443, so renewals work either way.
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: trainwithshubham@gmail.com
+    privateKeySecretRef:
+      name: letsencrypt-prod-account-key
+    solvers:
+      - http01:
+          gatewayHTTPRoute:
+            parentRefs:
+              - kind: Gateway
+                name: devboard-gateway
+                namespace: devboard

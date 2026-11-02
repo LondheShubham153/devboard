@@ -1,0 +1,24 @@
+{{- if .Values.certManager.createIssuer }}
+# Namespaced Issuer, not a ClusterIssuer: the solver's parentRefs must point at
+# THIS release's Gateway, and the shared ClusterIssuers in gitops/cert-manager/
+# point at the raw stack's.
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: {{ .Values.certManager.issuerName | default (printf "%s-letsencrypt" (include "devboard.fullname" .)) }}
+  labels:
+    {{- include "devboard.labels" . | nindent 4 }}
+spec:
+  acme:
+    server: {{ .Values.certManager.server }}
+    email: {{ .Values.certManager.email }}
+    privateKeySecretRef:
+      name: {{ include "devboard.fullname" . }}-acme-account-key
+    solvers:
+      - http01:
+          gatewayHTTPRoute:
+            parentRefs:
+              - kind: Gateway
+                name: {{ include "devboard.fullname" . }}-gateway
+                namespace: {{ .Release.Namespace }}
+{{- end }}

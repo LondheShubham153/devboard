@@ -1,0 +1,119 @@
+adminPassword: devboard
+
+persistence:
+  enabled: false
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi
+
+service:
+  type: ClusterIP
+
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        uid: prometheus
+        url: http://prometheus-operated.observability.svc.cluster.local:9090
+        access: proxy
+        isDefault: true
+        jsonData:
+          timeInterval: 30s
+          exemplarTraceIdDestinations:
+            - name: trace_id
+              datasourceUid: tempo
+
+      - name: Loki
+        type: loki
+        uid: loki
+        url: http://loki.observability.svc.cluster.local:3100
+        access: proxy
+        jsonData:
+          derivedFields:
+            - name: trace_id
+              matcherType: label
+              matcherRegex: trace_id
+              datasourceUid: tempo
+              url: "$${__value.raw}"
+            - name: TraceID
+              matcherType: regex
+              matcherRegex: "trace_id=(\\w+)"
+              datasourceUid: tempo
+              url: "$${__value.raw}"
+
+      - name: Tempo
+        type: tempo
+        uid: tempo
+        # Tempo's HTTP API is 3200; 3100 is Loki. Wrong port = a datasource that returns nothing.
+        url: http://tempo.observability.svc.cluster.local:3200
+        access: proxy
+        jsonData:
+          tracesToLogsV2:
+            datasourceUid: loki
+            spanStartTimeShift: "-2m"
+            spanEndTimeShift: "2m"
+            filterByTraceID: true
+            filterBySpanID: false
+            tags:
+              - key: k8s.namespace.name
+                value: k8s_namespace_name
+              - key: k8s.pod.name
+                value: k8s_pod_name
+
+          tracesToMetrics:
+            datasourceUid: prometheus
+            spanStartTimeShift: "-2m"
+            spanEndTimeShift: "2m"
+            queries:
+              - name: "Request rate"
+                query: 'sum(rate(traces_span_metrics_calls_total{$$__tags}[5m]))'
+              - name: "p95 latency"
+                query: 'histogram_quantile(0.95, sum(rate(traces_span_metrics_duration_seconds_bucket{$$__tags}[5m])) by (le))'
+
+          serviceMap:
+            datasourceUid: prometheus
+          nodeGraph:
+            enabled: true
+          search:
+            hide: false
+
+sidecar:
+  dashboards:
+    enabled: true
+    label: grafana_dashboard
+    labelValue: "1"
+    searchNamespace: ALL
+    folderAnnotation: grafana_folder
+    provider:
+      foldersFromFilesStructure: true
+
+dashboardProviders:
+  dashboardproviders.yaml:
+    apiVersion: 1
+    providers:
+      - name: community
+        orgId: 1
+        folder: Community
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards/community
+
+dashboards:
+  community:
+    node-exporter:
+      gnetId: 1860
+      revision: 37
+      datasource: Prometheus
+    kube-state:
+      gnetId: 13332
+      revision: 12
+      datasource: Prometheus

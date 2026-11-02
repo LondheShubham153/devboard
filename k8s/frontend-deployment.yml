@@ -17,16 +17,26 @@ spec:
     spec:
       containers:
       - name: devboard-frontend
-        image: trainwithshubham/devboard-frontend:latest
+        image: trainwithshubham/devboard-frontend:sha-4945e5b
         ports:
         - containerPort: 4173
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 4173
+          initialDelaySeconds: 15
+          periodSeconds: 15
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 4173
+          initialDelaySeconds: 5
+          periodSeconds: 10
         resources:
-          requests: # min needed
+          requests:
             cpu: 10m
             memory: 64Mi
-          limits: # max usable
+          limits:
             cpu: 250m
             memory: 128Mi
-
-
 

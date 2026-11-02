@@ -1,0 +1,60 @@
+---
+# Sets the AWS region, saves your keys, and adds a `k` shortcut to the shell.
+#
+#   ansible-playbook -i inventory.ini 02-configure-aws.yml
+
+- name: Configure AWS and the shell
+  hosts: devboard
+  become: true
+
+  tasks:
+    - name: Create the .aws folder
+      ansible.builtin.file:
+        path: "/home/{{ login_user }}/.aws"
+        state: directory
+        owner: "{{ login_user }}"
+        group: "{{ login_user }}"
+        mode: "0700"
+
+    - name: Set the AWS region
+      ansible.builtin.copy:
+        content: |
+          [default]
+          region = {{ aws_region }}
+          output = json
+        dest: "/home/{{ login_user }}/.aws/config"
+        owner: "{{ login_user }}"
+        group: "{{ login_user }}"
+        mode: "0600"
+
+    # Skipped when aws_access_key is empty, which is what you want if the
+    # instance has an IAM role attached.
+    - name: Save the AWS keys
+      ansible.builtin.copy:
+        content: |
+          [default]
+          aws_access_key_id = {{ aws_access_key }}
+          aws_secret_access_key = {{ aws_secret_key }}
+        dest: "/home/{{ login_user }}/.aws/credentials"
+        owner: "{{ login_user }}"
+        group: "{{ login_user }}"
+        mode: "0600"
+      no_log: true
+      when: aws_access_key | length > 0
+
+    - name: Say so when no keys were given
+      ansible.builtin.debug:
+        msg: >-
+          No aws_access_key set, so no credentials file was written.
+          The instance needs an IAM role attached, or run `aws configure` yourself.
+      when: aws_access_key | length == 0
+
+    - name: Add the region and a `k` shortcut to the shell
+      ansible.builtin.copy:
+        content: |
+          export AWS_REGION={{ aws_region }}
+          export AWS_DEFAULT_REGION={{ aws_region }}
+          source <(kubectl completion bash)
+          alias k=kubectl
+        dest: /etc/profile.d/devboard.sh
+        mode: "0644"

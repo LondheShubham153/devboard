@@ -1,6 +1,3 @@
-# DevBoard — short commands so you don't have to remember the long ones.
-# Run "make" to see this list.
-
 help:
 	@echo ""
 	@echo "DevBoard commands:"
@@ -43,5 +40,4 @@ smoke:
 	curl -s "http://localhost:8080/api/tasks?project_id=1"
 	@echo ""
 
-# These are command names, not files — so make always runs them.
 .PHONY: help setup up down logs ps reset smoke

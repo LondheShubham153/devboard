@@ -1,0 +1,34 @@
+# Grafana. Wave 3: its datasources reference Services that must already exist.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: observability-grafana
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  project: default
+
+  sources:
+    - repoURL: https://grafana-community.github.io/helm-charts
+      chart: grafana
+      targetRevision: "12.10.4"
+      helm:
+        valueFiles:
+          - $values/gitops/observability/grafana-values.yaml
+
+    - repoURL: https://github.com/LondheShubham153/devboard.git
+      targetRevision: mega-project
+      ref: values
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

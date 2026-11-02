@@ -2,12 +2,18 @@
 //
 // This is the "advanced" branch's backend: the same React UI as the
 // fundamentals branch, but its data now comes from real HTTP endpoints
-// backed by Postgres instead of an in-memory mock store. No auth, no queues,
-// no tracing — just projects and tasks CRUD, kept deliberately small so the
+// backed by Postgres instead of an in-memory mock store. No auth and no
+// queues — just projects and tasks CRUD, kept deliberately small so the
 // wiring (UI → gateway → Go → Postgres) is the whole lesson.
+//
+// It IS traced, as of the mega-project branch: see tracing.go, and note that
+// every handler passes c.Request.Context() into its query. That is not
+// ceremony — a span with no parent context floats free of its trace, which is
+// precisely why Go APIs take a context as their first argument.
 package main
 
 import (
+	"context"
 	"database/sql"
 	"log"
 	"net/http"
@@ -15,8 +21,12 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/XSAM/otelsql"
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
+	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
+	"go.opentelemetry.io/otel/trace"
 )
 
 var db *sql.DB
@@ -44,10 +54,21 @@ type Project struct {
 }
 
 func main() {
+	// Start tracing before anything else, so the DB connection and every
+	// request that follows are covered. See tracing.go.
+	shutdownTracing := initTracing(context.Background())
+	defer shutdownTracing()
+
 	dsn := env("POSTGRES_URL", "postgres://devboard:devboard@localhost:5432/devboard?sslmode=disable")
 
 	var err error
-	db, err = sql.Open("postgres", dsn)
+	// otelsql.Open instead of sql.Open: it wraps the driver so every query
+	// becomes a child span carrying the SQL statement. This is how "the API is
+	// slow" turns into "this one SELECT is slow" without adding a single line
+	// of timing code to any handler.
+	db, err = otelsql.Open("postgres", dsn,
+		otelsql.WithAttributes(semconv.DBSystemPostgreSQL),
+	)
 	if err != nil {
 		log.Fatalf("[backend] FATAL open db: %v", err)
 	}
@@ -68,6 +89,12 @@ func main() {
 
 	r := gin.Default()
 
+	// Reads the incoming traceparent header, starts a server span as its
+	// child, and puts that span in c.Request.Context(). Everything downstream
+	// — including the otelsql spans above — hangs off it, which is why the
+	// handlers below pass c.Request.Context() into every query.
+	r.Use(otelgin.Middleware("devboard-backend"))
+
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok", "service": "backend"})
 	})
@@ -87,7 +114,7 @@ func main() {
 }
 
 func listProjects(c *gin.Context) {
-	rows, err := db.Query(
+	rows, err := db.QueryContext(c.Request.Context(),
 		`SELECT id, name, COALESCE(description,''), owner_id, created_at
 		   FROM projects ORDER BY id`)
 	if err != nil {
@@ -122,7 +149,7 @@ func createProject(c *gin.Context) {
 	}
 	var p Project
 	var created time.Time
-	err := db.QueryRow(
+	err := db.QueryRowContext(c.Request.Context(),
 		`INSERT INTO projects (name, description, owner_id)
 		 VALUES ($1, $2, $3)
 		 RETURNING id, name, COALESCE(description,''), owner_id, created_at`,
@@ -142,7 +169,7 @@ func listTasks(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "project_id is required"})
 		return
 	}
-	rows, err := db.Query(taskSelect+` WHERE project_id = $1 ORDER BY id`, projectID)
+	rows, err := db.QueryContext(c.Request.Context(), taskSelect+` WHERE project_id = $1 ORDER BY id`, projectID)
 	if err != nil {
 		fail(c, err)
 		return
@@ -177,7 +204,7 @@ func createTask(c *gin.Context) {
 	if body.Priority == "" {
 		body.Priority = "medium"
 	}
-	row := db.QueryRow(
+	row := db.QueryRowContext(c.Request.Context(),
 		`INSERT INTO tasks (title, description, project_id, status, priority)
 		 VALUES ($1, $2, $3, $4, $5)`+taskReturning,
 		body.Title, body.Description, body.ProjectID, body.Status, body.Priority,
@@ -225,7 +252,7 @@ func updateTask(c *gin.Context) {
 
 	query := "UPDATE tasks SET " + join(sets, ", ") +
 		" WHERE id=$" + strconv.Itoa(i) + taskReturning
-	row := db.QueryRow(query, args...)
+	row := db.QueryRowContext(c.Request.Context(), query, args...)
 	task, err := scanTask(row)
 	if err == sql.ErrNoRows {
 		c.JSON(http.StatusNotFound, gin.H{"error": "task not found"})
@@ -245,7 +272,7 @@ func searchTasks(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "project_id is required"})
 		return
 	}
-	rows, err := db.Query(
+	rows, err := db.QueryContext(c.Request.Context(),
 		taskSelect+` WHERE project_id = $1 AND title ILIKE '%' || $2 || '%' ORDER BY id`,
 		projectID, q)
 	if err != nil {
@@ -316,7 +343,17 @@ func join(parts []string, sep string) string {
 }
 
 func fail(c *gin.Context, err error) {
-	log.Printf("[backend] ERROR: %v", err)
+	// Stamp the trace ID onto the error log. This one string is what turns
+	// "an error happened somewhere" into "click here to see the exact request,
+	// with every span and every SQL statement that led to it" — Grafana's Loki
+	// datasource regexes trace_id=... out of the line and offers a link
+	// straight into Tempo (see gitops/observability/grafana-values.yaml).
+	//
+	// Note ai-service gets this for free: it ships logs over OTLP, so the
+	// trace ID travels as a structured field and needs no regex. Doing it by
+	// hand here is the honest cost of a language with no auto-instrumentation.
+	sc := trace.SpanFromContext(c.Request.Context()).SpanContext()
+	log.Printf("[backend] ERROR trace_id=%s: %v", sc.TraceID(), err)
 	c.JSON(http.StatusInternalServerError, gin.H{"error": "internal error"})
 }
 

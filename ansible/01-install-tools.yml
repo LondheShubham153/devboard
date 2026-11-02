@@ -1,0 +1,133 @@
+---
+# Installs the command line tools Deploy.md needs.
+#
+#   ansible-playbook -i inventory.ini 01-install-tools.yml
+#
+# Everything except jq/git/dig is a single downloaded binary dropped into
+# /usr/local/bin. No apt repositories, no GPG keys — those are the parts that
+# break, and none of these tools ship in Ubuntu's own package list anyway.
+
+- name: Install the deployment tools
+  hosts: devboard
+  become: true
+
+  vars:
+    # Ansible says x86_64 / aarch64; these downloads say amd64 / arm64.
+    go_arch: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
+
+  tasks:
+    - name: Install what Ubuntu already ships
+      ansible.builtin.apt:
+        name:
+          - curl
+          - dnsutils      # gives you `dig`
+          - git
+          - jq
+          - unzip
+        state: present
+        update_cache: true
+
+    # ------------------------------------------------------------------ aws
+
+    # Ubuntu's `awscli` package is version 1, which has no `aws eks get-token`.
+    # Every kubectl call against EKS needs that, so we install v2 from AWS.
+    - name: Download the AWS CLI
+      ansible.builtin.get_url:
+        url: "https://awscli.amazonaws.com/awscli-exe-linux-{{ ansible_architecture }}.zip"
+        dest: /tmp/awscli.zip
+        mode: "0644"
+
+    - name: Unzip the AWS CLI
+      ansible.builtin.unarchive:
+        src: /tmp/awscli.zip
+        dest: /tmp
+        remote_src: true
+        creates: /tmp/aws/install
+
+    - name: Install the AWS CLI
+      ansible.builtin.command:
+        cmd: /tmp/aws/install --update
+        creates: /usr/local/bin/aws
+
+    # ------------------------------------------------------------ terraform
+
+    - name: Find the current Terraform version
+      ansible.builtin.uri:
+        url: https://checkpoint-api.hashicorp.com/v1/check/terraform
+        return_content: true
+      register: tf_release
+
+    - name: Install Terraform
+      ansible.builtin.unarchive:
+        src: >-
+          https://releases.hashicorp.com/terraform/{{ tf_release.json.current_version }}/terraform_{{ tf_release.json.current_version }}_linux_{{ go_arch }}.zip
+        dest: /usr/local/bin
+        remote_src: true
+        mode: "0755"
+        creates: /usr/local/bin/terraform
+
+    # -------------------------------------------------------------- kubectl
+
+    # stable-1.34.txt gives the newest patch of 1.34, matching the cluster in
+    # terraform/terraform.tfvars. kubectl supports one minor version of skew.
+    - name: Find the current kubectl version
+      ansible.builtin.uri:
+        url: https://dl.k8s.io/release/stable-1.34.txt
+        return_content: true
+      register: kubectl_release
+
+    - name: Install kubectl
+      ansible.builtin.get_url:
+        url: "https://dl.k8s.io/release/{{ kubectl_release.content | trim }}/bin/linux/{{ go_arch }}/kubectl"
+        dest: /usr/local/bin/kubectl
+        mode: "0755"
+
+    # ----------------------------------------------------------------- helm
+
+    - name: Find the current Helm version
+      ansible.builtin.uri:
+        url: https://get.helm.sh/helm-latest-version
+        return_content: true
+      register: helm_release
+
+    - name: Unpack Helm
+      ansible.builtin.unarchive:
+        src: "https://get.helm.sh/helm-{{ helm_release.content | trim }}-linux-{{ go_arch }}.tar.gz"
+        dest: /tmp
+        remote_src: true
+        creates: "/tmp/linux-{{ go_arch }}/helm"
+
+    - name: Install Helm
+      ansible.builtin.copy:
+        src: "/tmp/linux-{{ go_arch }}/helm"
+        dest: /usr/local/bin/helm
+        mode: "0755"
+        remote_src: true
+
+    # ------------------------------------------------------------------- gh
+
+    - name: Find the current GitHub CLI version
+      ansible.builtin.uri:
+        url: https://api.github.com/repos/cli/cli/releases/latest
+        return_content: true
+      register: gh_release
+
+    # The tag is "v2.97.0" but the file inside is named "2.97.0", hence both.
+    - name: Remember the GitHub CLI version
+      ansible.builtin.set_fact:
+        gh_tag: "{{ gh_release.json.tag_name }}"
+        gh_ver: "{{ gh_release.json.tag_name | replace('v', '') }}"
+
+    - name: Unpack the GitHub CLI
+      ansible.builtin.unarchive:
+        src: "https://github.com/cli/cli/releases/download/{{ gh_tag }}/gh_{{ gh_ver }}_linux_{{ go_arch }}.tar.gz"
+        dest: /tmp
+        remote_src: true
+        creates: "/tmp/gh_{{ gh_ver }}_linux_{{ go_arch }}/bin/gh"
+
+    - name: Install the GitHub CLI
+      ansible.builtin.copy:
+        src: "/tmp/gh_{{ gh_ver }}_linux_{{ go_arch }}/bin/gh"
+        dest: /usr/local/bin/gh
+        mode: "0755"
+        remote_src: true

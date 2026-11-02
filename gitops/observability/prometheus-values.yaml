@@ -1,0 +1,58 @@
+grafana:
+  enabled: false
+alertmanager:
+  enabled: false
+
+kubeStateMetrics:
+  enabled: true
+nodeExporter:
+  enabled: true
+
+prometheus:
+  prometheusSpec:
+    enableRemoteWriteReceiver: true
+    enableOTLPReceiver: true
+
+    retention: 24h
+    scrapeInterval: 30s
+    evaluationInterval: 30s
+
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    probeSelectorNilUsesHelmValues: false
+
+    resources:
+      requests:
+        cpu: 200m
+        memory: 1Gi
+      limits:
+        cpu: "1"
+        memory: 2Gi
+
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: gp3
+          accessModes: [ReadWriteOnce]
+          resources:
+            requests:
+              storage: 10Gi
+
+prometheus-node-exporter:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 64Mi
+
+prometheusOperator:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 100Mi
+    limits:
+      cpu: 200m
+      memory: 200Mi

@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "devboard.fullname" . }}-postgres
+  labels:
+    {{- include "devboard.labels" . | nindent 4 }}
+    app: devboard-postgres
+spec:
+  serviceName: {{ .Values.postgres.serviceName }}
+  replicas: 1
+  selector:
+    matchLabels:
+      app: devboard-postgres
+  template:
+    metadata:
+      labels:
+        {{- include "devboard.labels" . | nindent 8 }}
+        app: devboard-postgres
+    spec:
+      # No pod here calls the Kubernetes API, so do not hand it a token.
+      automountServiceAccountToken: false
+      containers:
+        - name: postgres
+          image: {{ .Values.postgres.image }}
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: devboard-secrets
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: devboard-secrets
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: devboard-secrets
+                  key: POSTGRES_DB
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          readinessProbe:
+            exec:
+              command: ["sh", "-c", "pg_isready -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\""]
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.postgres.resources | nindent 12 }}
+          volumeMounts:
+            - name: init
+              mountPath: /docker-entrypoint-initdb.d
+              readOnly: true
+            - name: data
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: init
+          configMap:
+            name: postgres-init
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        {{- if .Values.postgres.storage.storageClassName }}
+        storageClassName: {{ .Values.postgres.storage.storageClassName }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.postgres.storage.size }}

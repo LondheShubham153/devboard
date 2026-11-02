@@ -1,0 +1,120 @@
+{
+  "title": "DevBoard AI — RED",
+  "uid": "devboard-ai-red",
+  "tags": ["devboard", "ai"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "namespace",
+        "label": "Stack",
+        "type": "custom",
+        "query": "devboard,devboard-helm",
+        "current": { "text": "devboard", "value": "devboard" },
+        "options": []
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "row",
+      "title": "Rate, Errors, Duration — derived from spans, not from app code",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }
+    },
+    {
+      "type": "timeseries",
+      "title": "Request rate by endpoint",
+      "description": "From the spanmetrics connector in the Collector. No metrics code in ai-service produced this.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 1 },
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "targets": [
+        {
+          "expr": "sum by (span_name) (rate(traces_span_metrics_calls_total{service_name=\"ai-service\"}[5m]))",
+          "legendFormat": "{{span_name}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Error ratio",
+      "description": "Spans marked ERROR over all spans. An upstream model failure now lands here because model.py raises instead of yielding the error as text.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 1 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 0.1 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(traces_span_metrics_calls_total{service_name=\"ai-service\",status_code=\"STATUS_CODE_ERROR\"}[5m])) / clamp_min(sum(rate(traces_span_metrics_calls_total{service_name=\"ai-service\"}[5m])), 0.0001)",
+          "legendFormat": "error ratio",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Latency p50 / p95 / p99",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 1 },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(traces_span_metrics_duration_seconds_bucket{service_name=\"ai-service\"}[5m])))",
+          "legendFormat": "p50",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(traces_span_metrics_duration_seconds_bucket{service_name=\"ai-service\"}[5m])))",
+          "legendFormat": "p95",
+          "refId": "B"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(traces_span_metrics_duration_seconds_bucket{service_name=\"ai-service\"}[5m])))",
+          "legendFormat": "p99",
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "title": "What the app THINKS happened vs what ACTUALLY happened",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 9 }
+    },
+    {
+      "type": "timeseries",
+      "title": "The two counters",
+      "description": "The app's own ai_service_requests_total is incremented BEFORE the stream runs (main.py), so it records 200 forever and can never observe a model failure. The span-derived series tells the truth. This panel is left deliberately broken — fixing the counter is the exercise in chapter 12.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 10 },
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "targets": [
+        {
+          "expr": "sum by (status) (rate(ai_service_requests_total{namespace=\"$namespace\"}[5m]))",
+          "legendFormat": "app counter — status {{status}}",
+          "refId": "A"
+        },
+        {
+          "expr": "sum by (status_code) (rate(traces_span_metrics_calls_total{service_name=\"ai-service\"}[5m]))",
+          "legendFormat": "spans — {{status_code}}",
+          "refId": "B"
+        }
+      ]
+    }
+  ]
+}

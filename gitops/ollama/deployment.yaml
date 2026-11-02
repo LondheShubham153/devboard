@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama
+  namespace: ollama
+  labels:
+    app: ollama
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate           # single RWO volume — don't run two pods at once
+  selector:
+    matchLabels:
+      app: ollama
+  template:
+    metadata:
+      labels:
+        app: ollama
+    spec:
+      # No pod here calls the Kubernetes API, so do not hand it a token.
+      automountServiceAccountToken: false
+      initContainers:
+        - name: pull-model
+          image: ollama/ollama:0.12.6
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -e
+              /bin/ollama serve &
+              pid=$!
+              until ollama list >/dev/null 2>&1; do sleep 1; done
+              ollama pull "$OLLAMA_MODEL"
+              kill $pid          # hand the volume to the real container
+          env:
+            - name: OLLAMA_MODEL
+              value: llama3.2:1b
+          volumeMounts:
+            - name: models
+              mountPath: /root/.ollama
+      containers:
+        - name: ollama
+          # Pinned tag: :latest forces pullPolicy Always -> Docker Hub rate limit -> ImagePullBackOff.
+          image: ollama/ollama:0.12.6
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 11434
+          env:
+            - name: OLLAMA_MODEL
+              value: llama3.2:1b
+            - name: OLLAMA_KEEP_ALIVE
+              value: "-1"
+            - name: OLLAMA_MAX_LOADED_MODELS
+              value: "1"
+            - name: OLLAMA_NUM_PARALLEL
+              value: "1"
+          startupProbe:
+            httpGet:
+              path: /api/tags
+              port: 11434
+            periodSeconds: 5
+            failureThreshold: 60      # up to 5 min for a cold volume
+          readinessProbe:
+            httpGet:
+              path: /api/tags
+              port: 11434
+            periodSeconds: 10
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /api/tags
+              port: 11434
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 5
+          resources:
+            requests:
+              cpu: "1"          # inference is CPU-bound; reserve a real core
+              memory: 2Gi
+            limits:
+              cpu: "1500m"
+              memory: 4Gi       # 8 GiB nodes: room for a 3b model without OOMKill
+              ephemeral-storage: 1Gi   # models live on the PVC, not the container layer
+          volumeMounts:
+            - name: models
+              mountPath: /root/.ollama
+      volumes:
+        - name: models
+          persistentVolumeClaim:
+            claimName: ollama-models

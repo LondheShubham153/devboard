@@ -1,0 +1,155 @@
+mode: deployment
+replicaCount: 1        # stateless — raise it once you trust the pipeline
+
+# contrib, not -k8s: -k8s lacks these components. v0.149.0 renamed them all to snake_case.
+image:
+  repository: otel/opentelemetry-collector-contrib
+command:
+  name: otelcol-contrib
+
+fullnameOverride: otel-collector-gateway
+
+clusterRole:
+  create: true
+  rules:
+    - apiGroups: [""]
+      resources: [pods, namespaces, nodes]
+      verbs: [get, watch, list]
+    - apiGroups: ["apps"]
+      resources: [replicasets]
+      verbs: [get, watch, list]
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 512Mi
+  limits:
+    cpu: 500m
+    memory: 1Gi
+
+ports:
+  otlp:
+    enabled: true
+  otlp-http:
+    enabled: true
+  prometheus:
+    enabled: true
+    containerPort: 8889
+    servicePort: 8889
+    protocol: TCP
+  # Dedicated port for browser spans. The Gateway exposes ONLY this port, and only
+  # for /otlp/v1/traces, so untrusted input never shares a pipeline with the services.
+  otlp-browser:
+    enabled: true
+    containerPort: 4319
+    servicePort: 4319
+    protocol: TCP
+  jaeger-compact: { enabled: false }
+  jaeger-thrift: { enabled: false }
+  jaeger-grpc: { enabled: false }
+  zipkin: { enabled: false }
+
+config:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: ${env:MY_POD_IP}:4317
+        http:
+          endpoint: ${env:MY_POD_IP}:4318
+    otlp/browser:
+      protocols:
+        http:
+          endpoint: ${env:MY_POD_IP}:4319
+          max_request_body_size: 1048576   # 1 MiB; this endpoint is public
+
+  processors:
+    memory_limiter:
+      check_interval: 1s
+      limit_percentage: 80
+      spike_limit_percentage: 25
+
+    k8s_attributes:
+      auth_type: serviceAccount
+      passthrough: false
+      extract:
+        metadata:
+          - k8s.namespace.name
+          - k8s.pod.name
+          - k8s.deployment.name
+          - k8s.node.name
+      pod_association:
+        - sources:
+            - from: connection
+
+    # Anyone can POST to the browser receiver, so identity is forced here and
+    # never trusted from the payload: a browser cannot pose as `backend`.
+    resource/browser:
+      attributes:
+        - { key: service.name, value: devboard-frontend, action: upsert }
+        - { key: telemetry.source, value: browser, action: upsert }
+
+    batch:
+      send_batch_size: 1024
+      timeout: 5s
+
+  connectors:
+    span_metrics:
+      histogram:
+        explicit:
+          buckets: [10ms, 50ms, 100ms, 250ms, 500ms, 1s, 2s, 5s, 10s, 30s, 60s]
+      dimensions:
+        - name: http.route
+        - name: http.request.method
+        - name: k8s.namespace.name
+      metrics_flush_interval: 15s
+
+  exporters:
+    otlp_grpc/tempo:
+      endpoint: tempo.observability.svc.cluster.local:4317
+      tls:
+        insecure: true   # in-cluster traffic; mTLS is a service-mesh concern
+
+    otlp_http/loki:
+      endpoint: http://loki.observability.svc.cluster.local:3100/otlp
+
+    prometheus_remote_write:
+      endpoint: http://prometheus-operated.observability.svc.cluster.local:9090/api/v1/write
+      tls:
+        insecure: true
+      resource_to_telemetry_conversion:
+        enabled: true
+
+    debug:
+      verbosity: basic
+
+  service:
+    telemetry:
+      metrics:
+        readers:
+          - pull:
+              exporter:
+                prometheus:
+                  host: 0.0.0.0
+                  port: 8888
+
+    pipelines:
+      traces:
+        receivers: [otlp]
+        processors: [memory_limiter, k8s_attributes, batch]
+        exporters: [otlp_grpc/tempo, span_metrics]
+
+      traces/browser:
+        receivers: [otlp/browser]
+        processors: [memory_limiter, resource/browser, batch]
+        exporters: [otlp_grpc/tempo, span_metrics]
+
+      metrics:
+        receivers: [otlp, span_metrics]
+        processors: [memory_limiter, k8s_attributes, batch]
+        exporters: [prometheus_remote_write]
+
+      logs:
+        receivers: [otlp]
+        processors: [memory_limiter, k8s_attributes, batch]
+        exporters: [otlp_http/loki]

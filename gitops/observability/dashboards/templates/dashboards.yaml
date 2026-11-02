@@ -1,0 +1,25 @@
+{{/*
+One ConfigMap per .json file in dashboards/.
+
+.Files.Glob + .AsConfig is the idiomatic Helm way to ship files without pasting
+them into YAML — which matters here because it means the round trip works:
+edit a dashboard in Grafana's UI, open its JSON Model, paste it into a .json
+file in this directory, commit. The dashboard is now in Git and nobody had to
+hand-write a ConfigMap.
+
+The grafana_dashboard: "1" label is what the Grafana sidecar watches for. The
+grafana_folder annotation decides which folder it lands in.
+*/}}
+{{- range $path, $_ := .Files.Glob "dashboards/*.json" }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dashboard-{{ base $path | trimSuffix ".json" }}
+  labels:
+    grafana_dashboard: "1"
+  annotations:
+    grafana_folder: DevBoard
+data:
+{{ ($.Files.Glob $path).AsConfig | indent 2 }}
+{{- end }}

@@ -1,0 +1,47 @@
+# Browser spans: a separate HTTPRoute so the rate limit can target just this
+# route. (BackendTrafficPolicy sectionName is not supported by Envoy Gateway
+# v1.2.1, so targeting one rule of the main route is not an option.)
+# Needs the ReferenceGrant in gitops/observability/manifests/otlp-ingest.yaml.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: devboard-otlp-route
+  namespace: devboard
+spec:
+  parentRefs:
+    - name: devboard-gateway
+  rules:
+    - matches:
+        - path:
+            type: Exact
+            value: /otlp/v1/traces
+          method: POST
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplaceFullPath
+              replaceFullPath: /v1/traces
+      backendRefs:
+        - name: otel-collector-gateway
+          namespace: observability
+          port: 4319
+---
+# The endpoint is public and unauthenticated: cap it per Envoy instance.
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: BackendTrafficPolicy
+metadata:
+  name: otlp-ingest-limit
+  namespace: devboard
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: devboard-otlp-route
+  rateLimit:
+    type: Local
+    local:
+      rules:
+        - limit:
+            requests: 120
+            unit: Minute

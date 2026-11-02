@@ -1,0 +1,34 @@
+# OpenTelemetry Collector, per-node agent. Wave 2: it forwards to the gateway.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: observability-collector-agent
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  project: default
+
+  sources:
+    - repoURL: https://open-telemetry.github.io/opentelemetry-helm-charts
+      chart: opentelemetry-collector
+      targetRevision: "0.169.0"
+      helm:
+        valueFiles:
+          - $values/gitops/observability/collector-agent-values.yaml
+
+    - repoURL: https://github.com/LondheShubham153/devboard.git
+      targetRevision: mega-project
+      ref: values
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

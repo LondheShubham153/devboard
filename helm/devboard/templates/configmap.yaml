@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init
+  labels:
+    {{- include "devboard.labels" . | nindent 4 }}
+data:
+  01_schema.sql: |-
+{{ .Files.Get "files/01_schema.sql" | indent 4 }}
+  02_seed.sql: |-
+{{ .Files.Get "files/02_seed.sql" | indent 4 }}

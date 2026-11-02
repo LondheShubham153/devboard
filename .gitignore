@@ -15,3 +15,30 @@ dist/
 
 # claude's personal scratch notes (local only)
 CLAUDE.md
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+
+# --- Terraform ---------------------------------------------------------------
+terraform/**/.terraform/
+*.tfstate
+*.tfstate.*
+# Both forms: '*.tfplan' does NOT match a file named plainly 'tfplan',
+# which is what `terraform plan -out=tfplan` produces by default.
+*.tfplan
+tfplan
+.terraform.tfstate.lock.info
+crash.log
+crash.*.log
+
+# Personal to you: contains YOUR globally-unique state bucket name.
+terraform/backend.hcl
+*.auto.tfvars
+
+# NOT ignored, on purpose — half the .gitignore templates online get this wrong:
+#   .terraform.lock.hcl   provider checksums. Committing it is the whole point;
+#                         it is Terraform's package-lock.json.
+#   terraform.tfvars      teaching defaults with no secrets in them.

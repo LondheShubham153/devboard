@@ -1,0 +1,25 @@
+{{- if and .Values.gateway.enabled .Values.gateway.tls.enabled .Values.gateway.tls.createCertificate .Values.gateway.hostname }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "devboard.fullname" . }}-tls
+  labels:
+    {{- include "devboard.labels" . | nindent 4 }}
+spec:
+  secretName: {{ .Values.gateway.tls.secretName | default (printf "%s-tls" (include "devboard.fullname" .)) }}
+  dnsNames:
+    - {{ .Values.gateway.hostname | quote }}
+  issuerRef:
+    {{- if .Values.certManager.createIssuer }}
+    name: {{ .Values.certManager.issuerName | default (printf "%s-letsencrypt" (include "devboard.fullname" .)) }}
+    kind: Issuer
+    {{- else }}
+    name: {{ .Values.gateway.tls.issuerRef.name }}
+    kind: {{ .Values.gateway.tls.issuerRef.kind }}
+    {{- end }}
+    group: cert-manager.io
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always
+{{- end }}

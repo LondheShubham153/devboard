@@ -1,0 +1,61 @@
+# Dependency updates.
+#
+# This is the other half of the supply-chain story in chapter 14. Pinning a
+# version (.terraform.lock.hcl, requirements.txt, go.mod) makes builds
+# reproducible; Dependabot is what stops "reproducible" from quietly meaning
+# "reproducibly vulnerable".
+version: 2
+
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: terraform
+    directory: /terraform
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: terraform
+    directory: /terraform/bootstrap
+    schedule:
+      interval: monthly
+
+  - package-ecosystem: gomod
+    directory: /backend
+    schedule:
+      interval: weekly
+    groups:
+      # The OTel Go modules must move together — mixing SDK and contrib
+      # release lines produces build failures that read like your bug.
+      opentelemetry:
+        patterns:
+          - "go.opentelemetry.io/*"
+          - "github.com/XSAM/otelsql"
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: pip
+    directory: /ai-service
+    schedule:
+      interval: weekly
+    groups:
+      # Same rule as Go: opentelemetry-sdk 1.x pairs with instrumentation 0.xxb0.
+      # Updating one without the other breaks the import chain.
+      opentelemetry:
+        patterns:
+          - "opentelemetry-*"
+
+  - package-ecosystem: docker
+    directories:
+      - /backend
+      - /frontend
+      - /ai-service
+    schedule:
+      interval: weekly

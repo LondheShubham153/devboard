@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: devboard-ai-service-deployment
+  namespace: devboard
+  labels:
+    app: devboard-ai-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: devboard-ai-service
+  template:
+    metadata:
+      labels:
+        app: devboard-ai-service
+    spec:
+      # No pod here calls the Kubernetes API, so do not hand it a token.
+      automountServiceAccountToken: false
+      containers:
+        - name: devboard-ai-service
+          image: trainwithshubham/devboard-ai-service:sha-4945e5b
+          ports:
+            - containerPort: 3005
+          env:
+            - name: PORT
+              value: "3005"
+            - name: TASK_SERVICE_URL
+              value: http://backend:8080
+            - name: MODEL_API_BASE
+              value: http://ollama.ollama.svc.cluster.local:11434/v1
+            - name: MODEL_NAME
+              value: llama3.2:1b
+
+            - name: OTEL_SERVICE_NAME
+              value: ai-service
+            - name: OTEL_EXPORTER_OTLP_PROTOCOL
+              value: http/protobuf
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://otel-collector-gateway.observability.svc.cluster.local:4318
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: deployment.environment=raw,service.namespace=devboard
+            - name: OTEL_TRACES_EXPORTER
+              value: otlp
+            - name: OTEL_METRICS_EXPORTER
+              value: otlp
+            - name: OTEL_LOGS_EXPORTER
+              value: otlp
+            - name: OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED
+              value: "true"
+            - name: OTEL_PYTHON_LOG_CORRELATION
+              value: "true"
+            - name: OTEL_PYTHON_EXCLUDED_URLS
+              value: health,metrics
+            - name: OTEL_TRACES_SAMPLER
+              value: parentbased_traceidratio
+            - name: OTEL_TRACES_SAMPLER_ARG
+              value: "1.0"
+          # Readiness must not check Ollama: a dependency in a probe turns one outage into a tier outage.
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3005
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 4
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3005
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 25m
+              memory: 96Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi

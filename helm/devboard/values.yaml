@@ -1,0 +1,111 @@
+nameOverride: ""
+fullnameOverride: ""
+observability:
+  enabled: true
+  otlpGrpcEndpoint: http://otel-collector-gateway.observability.svc.cluster.local:4317
+  otlpHttpEndpoint: http://otel-collector-gateway.observability.svc.cluster.local:4318
+  # Route /otlp/v1/traces from the browser to the Collector's dedicated browser
+  # receiver. Needs the ReferenceGrant in gitops/observability/manifests/otlp-ingest.yaml.
+  browserTracing: true
+  collectorService: otel-collector-gateway
+  collectorNamespace: observability
+  browserPort: 4319
+  browserRateLimitPerMinute: 120
+externalSecrets:
+  enabled: true
+  secretKey: devboard/postgres
+  storeName: aws-secrets-manager
+  refreshInterval: 1h
+postgres:
+  image: postgres:16-alpine
+  serviceName: postgres
+  storage:
+    size: 1Gi
+    storageClassName: "gp3"
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+      ephemeral-storage: 1Gi
+backend:
+  image:
+    repository: trainwithshubham/devboard-backend
+    tag: sha-4945e5b
+    pullPolicy: IfNotPresent
+  replicas: 1
+  serviceName: backend
+  port: 8080
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi
+    limits:
+      cpu: 250m
+      memory: 128Mi
+frontend:
+  image:
+    repository: trainwithshubham/devboard-frontend
+    tag: sha-4945e5b
+    pullPolicy: IfNotPresent
+  replicas: 1
+  containerPort: 4173
+  servicePort: 8080
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi
+    limits:
+      cpu: 250m
+      memory: 128Mi
+  hpa:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 60
+ai:
+  enabled: true
+  image:
+    repository: trainwithshubham/devboard-ai-service
+    tag: sha-4945e5b
+    pullPolicy: IfNotPresent
+  replicas: 1
+  serviceName: ai-service
+  port: 3005
+  taskServiceUrl: http://backend:8080
+  ollamaUrl: http://ollama.ollama.svc.cluster.local:11434/v1
+  modelName: llama3.2:1b
+  resources:
+    requests:
+      cpu: 25m
+      memory: 96Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+gateway:
+  enabled: true
+  className: envoy
+  listenerPort: 80
+  # Empty accepts any Host, which is what the raw load balancer URL needs.
+  hostname: ""
+  # Off by default: the chart must still work with no cert-manager and no domain.
+  tls:
+    enabled: false
+    port: 443
+    # Must be in the Gateway's namespace. Empty -> "<fullname>-tls".
+    secretName: ""
+    createCertificate: true
+    issuerRef:
+      name: letsencrypt-prod
+      kind: ClusterIssuer
+    httpsRedirect: true
+# The shared ClusterIssuers in gitops/cert-manager/ hard-wire their solver to the
+# RAW stack's Gateway, so the Helm stack needs its own Issuer. Each stack gets
+# its own load balancer, so they need separate hostnames and DNS records.
+certManager:
+  createIssuer: false
+  issuerName: ""
+  server: https://acme-v02.api.letsencrypt.org/directory
+  email: trainwithshubham@gmail.com

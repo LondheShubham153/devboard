@@ -1,0 +1,22 @@
+{{- if .Values.frontend.hpa.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "devboard.fullname" . }}-frontend-hpa
+  labels:
+    {{- include "devboard.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "devboard.fullname" . }}-frontend
+  minReplicas: {{ .Values.frontend.hpa.minReplicas }}
+  maxReplicas: {{ .Values.frontend.hpa.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.frontend.hpa.targetCPUUtilizationPercentage }}
+{{- end }}

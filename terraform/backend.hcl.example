@@ -1,0 +1,10 @@
+# Generate: terraform -chdir=bootstrap output -raw backend_hcl > backend.hcl
+
+bucket = "devboard-tfstate-<your-account-id>-us-west-2"
+key    = "devboard/mega-project/terraform.tfstate"
+region = "us-west-2"
+
+encrypt = true
+
+# S3-native state locking, GA since Terraform 1.11. Replaced the DynamoDB lock table.
+use_lockfile = true

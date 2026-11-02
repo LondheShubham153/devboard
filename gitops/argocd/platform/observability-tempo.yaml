@@ -1,0 +1,34 @@
+# Tempo - trace storage. Wave 1: the Collector needs it before it can export.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: observability-tempo
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: default
+
+  sources:
+    - repoURL: https://grafana-community.github.io/helm-charts
+      chart: tempo
+      targetRevision: "2.2.3"
+      helm:
+        valueFiles:
+          - $values/gitops/observability/tempo-values.yaml
+
+    - repoURL: https://github.com/LondheShubham153/devboard.git
+      targetRevision: mega-project
+      ref: values
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

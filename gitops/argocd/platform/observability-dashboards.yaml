@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: observability-dashboards
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/LondheShubham153/devboard.git
+    targetRevision: mega-project
+    path: gitops/observability/dashboards
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

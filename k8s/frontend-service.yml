@@ -4,11 +4,10 @@ metadata:
   name: devboard-frontend-service
   namespace: devboard
 spec:
+  type: ClusterIP
   selector:
     app: devboard-frontend
   ports:
   - protocol: TCP
-    port: 8080
-    targetPort: 4173  # Pod port
-    nodePort: 30080  # Node ka port
-  type: NodePort
+    port: 8080       # Service port
+    targetPort: 4173 # Pod port

@@ -13,6 +13,16 @@ export default defineConfig({
     host: true,
     port: 5173,
     proxy: {
+      // Browser spans -> a local Collector (docker run otel/opentelemetry-collector-contrib).
+      '/otlp': {
+        target: 'http://localhost:4318',
+        rewrite: (path) => path.replace(/^\/otlp/, ''),
+      },
+      '/api/ai': {
+        target: 'http://localhost:3005',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/ai/, ''),
+      },
       '/api': {
         target: 'http://localhost:8080',
         changeOrigin: true,
@@ -22,9 +32,15 @@ export default defineConfig({
   },
   preview: {
     proxy: {
+      // AI calls go to the ai-service; listed before /api so the longer prefix wins.
+      '/api/ai': {
+        target: 'http://ai-service:3005',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/ai/, ''),
+      },
       '/api': {
-        // `backend` is the compose service name; 8080 is its container port and
-        // must match BACKEND_PORT in .env (the port the Go app listens on).
+        // `backend` is the compose/k8s service name; 8080 is its container port
+        // and must match the port the Go app listens on.
         target: 'http://backend:8080',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),

@@ -1,0 +1,143 @@
+{
+  "title": "Ollama health",
+  "uid": "devboard-ollama",
+  "tags": ["devboard", "ai", "ollama"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "refresh": "30s",
+  "time": { "from": "now-3h", "to": "now" },
+  "panels": [
+    {
+      "type": "row",
+      "title": "The two bugs that used to be invisible",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }
+    },
+    {
+      "type": "stat",
+      "title": "PVC Pending (the storageClassName bug)",
+      "description": "gitops/ollama/pvc.yaml named no StorageClass. EKS does not mark gp2 default, so the claim sat Pending, Ollama never scheduled, and every /api/ai call failed while ai-service reported healthy. Non-zero here means it is happening again.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 1 },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "sum(kube_persistentvolumeclaim_status_phase{namespace=\"ollama\",phase=\"Pending\"})",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "CPU throttling (the burstable-instance trap)",
+      "description": "t3 is burstable: a t3.large sustains ~0.6 vCPU across the whole node once its credits are gone. Sustained inference exhausts them and generation slows to a crawl, with no log line anywhere saying so. Seconds of throttling per second.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 6, "w": 12, "x": 6, "y": 1 },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [
+        {
+          "expr": "rate(container_cpu_cfs_throttled_seconds_total{namespace=\"ollama\",container=\"ollama\"}[5m])",
+          "legendFormat": "throttled",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Available replicas",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 6, "w": 6, "x": 18, "y": 1 },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "kube_deployment_status_replicas_available{namespace=\"ollama\",deployment=\"ollama\"}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "title": "Resources",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 7 }
+    },
+    {
+      "type": "timeseries",
+      "title": "Memory working set vs limit",
+      "description": "Ollama is Burstable QoS. If working set approaches the limit it gets OOMKilled mid-generation, which looks like a random stream failure.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+      "targets": [
+        {
+          "expr": "container_memory_working_set_bytes{namespace=\"ollama\",container=\"ollama\"}",
+          "legendFormat": "working set",
+          "refId": "A"
+        },
+        {
+          "expr": "kube_pod_container_resource_limits{namespace=\"ollama\",container=\"ollama\",resource=\"memory\"}",
+          "legendFormat": "limit",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "CPU usage vs limit",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "fieldConfig": { "defaults": { "unit": "none" }, "overrides": [] },
+      "targets": [
+        {
+          "expr": "rate(container_cpu_usage_seconds_total{namespace=\"ollama\",container=\"ollama\"}[5m])",
+          "legendFormat": "cores used",
+          "refId": "A"
+        },
+        {
+          "expr": "kube_pod_container_resource_limits{namespace=\"ollama\",container=\"ollama\",resource=\"cpu\"}",
+          "legendFormat": "limit",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "title": "Restarts",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 16 }
+    },
+    {
+      "type": "timeseries",
+      "title": "Container restarts",
+      "description": "Every restart re-loads a 1.3 GB model. With OLLAMA_KEEP_ALIVE=-1 and a bound PVC this should be flat.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 17 },
+      "targets": [
+        {
+          "expr": "increase(kube_pod_container_status_restarts_total{namespace=\"ollama\"}[15m])",
+          "legendFormat": "{{pod}}",
+          "refId": "A"
+        }
+      ]
+    }
+  ]
+}

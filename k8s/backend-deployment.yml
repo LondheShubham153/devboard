@@ -17,14 +17,14 @@ spec:
     spec:
       containers:
       - name: devboard-backend
-        image: trainwithshubham/devboard-backend:latest
+        image: trainwithshubham/devboard-backend:sha-4945e5b
         ports:
           - containerPort: 8080
         env:
           - name: POSTGRES_USER
             valueFrom:
-              configMapKeyRef:
-                name: devboard-configmap
+              secretKeyRef:
+                name: devboard-secrets
                 key: POSTGRES_USER
           
           - name: POSTGRES_PASSWORD
@@ -44,11 +44,32 @@ spec:
           
           - name: PORT
             value: "8080"
+
+          - name: OTEL_SERVICE_NAME
+            value: backend
+          - name: OTEL_EXPORTER_OTLP_ENDPOINT
+            value: http://otel-collector-gateway.observability.svc.cluster.local:4317
+          - name: OTEL_EXPORTER_OTLP_INSECURE
+            value: "true"
+          - name: OTEL_RESOURCE_ATTRIBUTES
+            value: deployment.environment=raw,service.namespace=devboard
         livenessProbe:
           httpGet:
             path: /health
             port: 8080
           initialDelaySeconds: 15
           periodSeconds: 10
-
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          requests:
+            cpu: 10m
+            memory: 64Mi
+          limits:
+            cpu: 250m
+            memory: 192Mi   # GitOps demo: bumped from 128Mi via a Git change
 

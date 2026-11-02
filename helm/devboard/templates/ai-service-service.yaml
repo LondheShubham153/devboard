@@ -1,0 +1,16 @@
+{{- if .Values.ai.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.ai.serviceName }}
+  labels:
+    {{- include "devboard.labels" . | nindent 4 }}
+spec:
+  selector:
+    app: devboard-ai-service
+  ports:
+    - name: http
+      protocol: TCP
+      port: {{ .Values.ai.port }}
+      targetPort: {{ .Values.ai.port }}
+{{- end }}

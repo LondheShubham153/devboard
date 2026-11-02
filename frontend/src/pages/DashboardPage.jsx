@@ -35,7 +35,7 @@ export function DashboardPage() {
           </div>
           <h1 className="text-[30px] font-semibold leading-none tracking-[-0.6px]">Good to see you, Shubham.</h1>
           <p className="text-[14px] text-ink-600 dark:text-ink-400 mt-2">
-            Here's where your work stands today.
+            HELLO DOSTO
           </p>
         </div>
         {firstId && (

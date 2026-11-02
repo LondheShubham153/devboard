@@ -1,15 +1,3 @@
-# DevBoard (advanced) — UI + Go backend + Postgres. That's the whole stack.
-#
-#   browser ──▶ frontend (vite preview :4173) ──/api──▶ backend (Go) ──▶ postgres
-#
-# Every configurable value lives in .env — Compose loads it automatically and
-# fills in the ${...} placeholders below. Edit .env, not this file, to change
-# credentials or ports. This way learners can see in one place exactly which
-# variables get injected into the db and the backend.
-#
-# Bring it up:  docker compose up --build
-# Then open:    http://localhost:8080   (FRONTEND_HOST_PORT)
-
 services:
   postgres:
     image: postgres:16-alpine
@@ -29,12 +17,10 @@ services:
       - "${POSTGRES_HOST_PORT}:5432"
 
   backend:
-    # build = local; image = the tag CI pushes and CD pulls (IMAGE_TAG, else latest).
     build: ./backend
     image: trainwithshubham/devboard-backend:${IMAGE_TAG:-latest}
     environment:
       PORT: "${BACKEND_PORT}"
-      # Built from the Postgres vars above so the credentials live in one place.
       POSTGRES_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable"
     depends_on:
       postgres:

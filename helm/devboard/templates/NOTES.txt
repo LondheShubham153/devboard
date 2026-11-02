@@ -1,0 +1,20 @@
+
+DevBoard has been deployed with Helm (release: {{ .Release.Name }}, namespace: {{ .Release.Namespace }}).
+
+Check the rollout:
+  kubectl -n {{ .Release.Namespace }} get pods,svc,statefulset
+
+{{- if .Values.gateway.enabled }}
+
+Get your public URL (wait ~2-3 min for the AWS NLB to be provisioned):
+  kubectl -n {{ .Release.Namespace }} get gateway {{ include "devboard.fullname" . }}-gateway \
+    -o jsonpath='{.status.addresses[0].value}'
+
+Then open:  http://<that-address>/
+Check the API through the frontend proxy:  curl http://<that-address>/api/projects
+{{- else }}
+
+Gateway is disabled. Reach the app with a port-forward:
+  kubectl -n {{ .Release.Namespace }} port-forward svc/devboard-frontend-service 8080:{{ .Values.frontend.servicePort }}
+  open http://localhost:8080/
+{{- end }}

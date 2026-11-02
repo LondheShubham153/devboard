@@ -1,0 +1,45 @@
+mode: daemonset
+
+image:
+  repository: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-k8s
+command:
+  name: otelcol-k8s
+
+fullnameOverride: otel-collector-agent
+
+presets:
+  logsCollection:
+    enabled: true
+    includeCollectorLogs: false
+
+  kubernetesAttributes:
+    enabled: true
+
+  hostMetrics:
+    enabled: true
+
+config:
+  exporters:
+    otlp/gateway:
+      endpoint: otel-collector-gateway.observability.svc.cluster.local:4317
+      tls:
+        insecure: true
+
+  service:
+    pipelines:
+      logs:
+        exporters: [otlp/gateway]
+      metrics:
+        exporters: [otlp/gateway]
+      traces: null
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi
+
+tolerations:
+  - operator: Exists

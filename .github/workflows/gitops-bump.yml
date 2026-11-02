@@ -1,0 +1,76 @@
+name: GitOps Image Bump
+
+on:
+  workflow_call:
+    inputs:
+      image_tag:
+        required: true
+        type: string
+
+concurrency:
+  group: gitops-bump-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0   # `git pull --rebase` below needs real history
+
+      - name: Install yq
+        run: |
+          sudo wget -qO /usr/local/bin/yq \
+            https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: Write image refs into manifests
+        env:
+          OWNER: ${{ vars.DOCKERHUB_USERNAME }}
+          TAG: ${{ inputs.image_tag }}
+        run: |
+          set -eu
+          # RAW manifests (if present): surgical sed on the single "image:" line,
+          # keeping the file's formatting/comments untouched.
+          for svc in backend frontend ai-service; do
+            f="k8s/${svc}-deployment.yml"
+            [ -f "$f" ] && sed -i "s|image: .*devboard-${svc}:.*|image: ${OWNER}/devboard-${svc}:${TAG}|" "$f"
+          done
+          # HELM values (if present): structured repository/tag — owner written
+          # too, so it can't drift from what CI pushed.
+          v="helm/devboard/values.yaml"
+          if [ -f "$v" ]; then
+            yq -i ".backend.image.repository  = \"${OWNER}/devboard-backend\"    | .backend.image.tag  = \"${TAG}\"" "$v"
+            yq -i ".frontend.image.repository = \"${OWNER}/devboard-frontend\"   | .frontend.image.tag = \"${TAG}\"" "$v"
+            yq -i ".ai.image.repository       = \"${OWNER}/devboard-ai-service\" | .ai.image.tag       = \"${TAG}\"" "$v"
+          fi
+
+      - name: Commit and push
+        env:
+          TAG: ${{ inputs.image_tag }}
+        run: |
+          set -eu
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet; then
+            echo "Manifests already at ${TAG}; nothing to commit."
+            exit 0
+          fi
+          # Scope the add. `git add -A` in a job that also downloads yq is how
+          # you accidentally commit a 40 MB binary.
+          git add k8s helm/devboard/values.yaml
+          git commit -m "ci: deploy ${TAG} [skip ci]"
+
+          # Push to whatever branch triggered us, so this keeps working on
+          # mega-project, on gitops, or on a fork's branch.
+          BRANCH="${{ github.ref_name }}"
+          for i in 1 2 3; do
+            git pull --rebase origin "$BRANCH" && git push origin "HEAD:$BRANCH" && exit 0
+            echo "Push rejected (attempt ${i}); retrying..."
+            sleep $((i * 5))
+          done
+          exit 1

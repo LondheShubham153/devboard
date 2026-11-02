@@ -1,0 +1,66 @@
+---
+# Checks every tool works and that AWS accepts your credentials.
+# Run this on its own any time you want to confirm the machine is still good.
+#
+#   ansible-playbook -i inventory.ini 04-verify.yml
+
+- name: Verify the machine is ready
+  hosts: devboard
+  become: true
+
+  tasks:
+    - name: Check every tool works
+      ansible.builtin.command:
+        cmd: "{{ item }}"
+      loop:
+        - aws --version
+        - terraform version
+        - kubectl version --client
+        - helm version --short
+        - jq --version
+        - dig -v
+        - git --version
+        - gh --version
+      register: tool_check
+      changed_when: false
+
+    # `dig -v` prints to stderr with nothing on stdout, so take whichever is
+    # non-empty rather than assuming stdout.
+    - name: Show the versions
+      ansible.builtin.debug:
+        msg: "{{ (item.stdout or item.stderr).splitlines() | first }}"
+      loop: "{{ tool_check.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+
+    # Deploy.md needs 1.11 or newer for S3-native state locking (use_lockfile).
+    - name: Check Terraform is new enough
+      ansible.builtin.command:
+        cmd: terraform version -json
+      register: tf_version
+      changed_when: false
+
+    - name: Fail if Terraform is too old
+      ansible.builtin.assert:
+        that:
+          - (tf_version.stdout | from_json).terraform_version is version('1.11.0', '>=')
+        fail_msg: >-
+          Terraform {{ (tf_version.stdout | from_json).terraform_version }} is too
+          old. Deploy.md needs 1.11 or newer for S3 state locking.
+        success_msg: "Terraform {{ (tf_version.stdout | from_json).terraform_version }} is fine."
+
+    - name: Check AWS accepts your credentials
+      ansible.builtin.command:
+        cmd: aws sts get-caller-identity --output json
+      become: true
+      become_user: "{{ login_user }}"
+      register: aws_identity
+      changed_when: false
+      failed_when: false
+
+    - name: Show the AWS identity
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'Logged in to AWS as ' ~ (aws_identity.stdout | from_json).Arn
+             if aws_identity.rc == 0
+             else 'AWS credentials do not work yet. Attach an IAM role, or set aws_access_key in group_vars/devboard.yml and re-run 02-configure-aws.yml.' }}

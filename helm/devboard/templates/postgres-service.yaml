@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.postgres.serviceName }}
+  labels:
+    {{- include "devboard.labels" . | nindent 4 }}
+spec:
+  clusterIP: None
+  selector:
+    app: devboard-postgres
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432

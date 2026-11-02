@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ollama
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/LondheShubham153/devboard.git
+    targetRevision: mega-project
+    path: gitops/ollama
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ollama
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

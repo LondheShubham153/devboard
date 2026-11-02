@@ -1,0 +1,28 @@
+# The ClusterIssuers, split from the operator for the same reason as
+# external-secrets-config: a ClusterIssuer is a custom resource, so its CRD has
+# to be registered first. Wave 0 installs, wave 1 configures.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cert-manager-config
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/LondheShubham153/devboard.git
+    targetRevision: mega-project
+    path: gitops/cert-manager
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cert-manager
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

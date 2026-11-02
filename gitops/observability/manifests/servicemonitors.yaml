@@ -1,0 +1,74 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: devboard-ai-service
+  namespace: observability
+  labels:
+    app.kubernetes.io/part-of: devboard
+spec:
+  namespaceSelector:
+    matchNames:
+      - devboard
+      - devboard-helm
+  selector:
+    matchLabels:
+      app: devboard-ai-service
+  # endpoints[].port matches the Service's port NAME, not its number.
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: devboard-backend
+  namespace: observability
+  labels:
+    app.kubernetes.io/part-of: devboard
+spec:
+  namespaceSelector:
+    matchNames:
+      - devboard
+      - devboard-helm
+  selector:
+    matchLabels:
+      app: devboard-backend
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: otel-collector-gateway
+  namespace: observability
+spec:
+  namespaceSelector:
+    matchNames:
+      - observability
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: opentelemetry-collector
+  endpoints:
+    - port: metrics
+      interval: 30s
+    - port: prometheus
+      interval: 30s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: envoy-gateway-proxies
+  namespace: observability
+spec:
+  namespaceSelector:
+    matchNames:
+      - envoy-gateway-system
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: envoy
+  podMetricsEndpoints:
+    - port: metrics
+      interval: 30s

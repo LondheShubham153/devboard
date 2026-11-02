@@ -1,0 +1,30 @@
+---
+# Clones the DevBoard repo into the home folder.
+#
+#   ansible-playbook -i inventory.ini 03-clone-repo.yml
+#
+# Point repo_url in group_vars/devboard.yml at YOUR fork first — ArgoCD deploys
+# from whatever that says, and you cannot push to someone else's repo.
+
+- name: Clone the DevBoard repo
+  hosts: devboard
+  become: true
+
+  tasks:
+    - name: Clone the repo
+      ansible.builtin.git:
+        repo: "{{ repo_url }}"
+        dest: "/home/{{ login_user }}/devboard"
+        version: "{{ repo_branch }}"
+        # false so a re-run never throws away local edits
+        update: false
+      become: true
+      become_user: "{{ login_user }}"
+
+    - name: Warn if the repo is still the upstream one
+      ansible.builtin.debug:
+        msg: >-
+          repo_url still points at LondheShubham153/devboard. Change it to your
+          fork in group_vars/devboard.yml, or ArgoCD will sync from a repo you
+          cannot push to.
+      when: "'LondheShubham153' in repo_url"
