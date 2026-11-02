@@ -2,8 +2,15 @@ nameOverride: ""
 fullnameOverride: ""
 observability:
   enabled: true
-  otlpGrpcEndpoint: otel-collector-gateway.observability.svc.cluster.local:4317
+  otlpGrpcEndpoint: http://otel-collector-gateway.observability.svc.cluster.local:4317
   otlpHttpEndpoint: http://otel-collector-gateway.observability.svc.cluster.local:4318
+  # Route /otlp/v1/traces from the browser to the Collector's dedicated browser
+  # receiver. Needs the ReferenceGrant in gitops/observability/manifests/otlp-ingest.yaml.
+  browserTracing: true
+  collectorService: otel-collector-gateway
+  collectorNamespace: observability
+  browserPort: 4319
+  browserRateLimitPerMinute: 120
 externalSecrets:
   enabled: true
   secretKey: devboard/postgres

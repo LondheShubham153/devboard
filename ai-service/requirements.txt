@@ -10,19 +10,24 @@ prometheus-client==0.20.0
 # Nothing below is imported by app/*.py. Go and read main.py — there is not one
 # OpenTelemetry line in it.
 #
-# `opentelemetry-instrument` (see the Dockerfile CMD) monkey-patches Flask and
-# httpx at process start, BEFORE our module is imported. That is what
+# Only the distro and the exporter are listed here. The per-library
+# instrumentation packages (flask, httpx, logging, ...) are NOT pinned by hand:
+# the Dockerfile runs `opentelemetry-bootstrap -a install` after this file is
+# installed, which scans site-packages and installs the matching instrumentation
+# for every library it finds. Add a new library above and it is traced on the
+# next build with no change here.
+#
+# `opentelemetry-instrument` (see the Dockerfile CMD) then monkey-patches those
+# libraries at process start, BEFORE our module is imported. That is what
 # "zero-code" actually means in Python: the code doesn't change, the ENTRYPOINT
 # does. Compare with backend/tracing.go, which does the same job in ~60 lines.
 #
-# The version pairing is load-bearing: SDK 1.44.0 goes with instrumentation
-# 0.65b0. Mixing lines produces import errors that read like bugs in your app.
+# The version pairing is load-bearing: SDK 1.44.0 goes with distro 0.65b0, and
+# bootstrap resolves instrumentation versions from that distro release. Mixing
+# lines produces import errors that read like bugs in your app.
 #
 # We use the HTTP/protobuf exporter rather than gRPC on purpose: it avoids
 # pulling grpcio (a ~40 MB C-extension wheel) into the image, and OTLP/HTTP is
 # curl-able, which makes "is anything arriving?" a much shorter conversation.
 opentelemetry-distro==0.65b0
 opentelemetry-exporter-otlp-proto-http==1.44.0
-opentelemetry-instrumentation-flask==0.65b0
-opentelemetry-instrumentation-httpx==0.65b0
-opentelemetry-instrumentation-logging==0.65b0

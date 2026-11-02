@@ -1,7 +1,7 @@
-# 12 — Three ways to instrument
+# 12 — Four ways to instrument
 
 The stack from chapter 11 is a receiver. Something has to *produce* the
-telemetry. DevBoard does it three different ways, on purpose, because the
+telemetry. DevBoard does it four different ways, on purpose, because the
 comparison is the whole lesson.
 
 | | Envoy Gateway | ai-service (Python) | backend (Go) |
@@ -64,8 +64,17 @@ That one word is the whole integration. `opentelemetry-instrument` reads the
 that matches a library you import, patches them, then execs your real command.
 Flask and httpx are wrapped *before* `app/main.py` is ever imported.
 
-So the change set is: five lines in `requirements.txt`, one word in the CMD,
-and a block of env vars in the Deployment. **The code did not change. The
+So the change set is: two lines in `requirements.txt` (the distro and the
+exporter), one `RUN opentelemetry-bootstrap -a install` in the Dockerfile, one
+word in the CMD, and a block of env vars in the Deployment.
+
+`opentelemetry-bootstrap` scans the installed packages and installs the matching
+instrumentation for each one (Flask, httpx, requests, urllib3 ...). Nobody
+maintains a list by hand, and a new library gets traced on the next build. It
+runs at **build** time, never at container start. The cost is that the image
+contents depend on the registry at build time, so CI uploads the resolved set
+(`opentelemetry-bootstrap -a requirements`) as an artifact. Probe and scrape
+noise is dropped with `OTEL_PYTHON_EXCLUDED_URLS=health,metrics`. **The code did not change. The
 entrypoint did.** That is what "zero-code instrumentation" actually means.
 
 Two choices in there worth explaining:
@@ -102,9 +111,33 @@ OTEL_TRACES_EXPORTER=console OTEL_SERVICE_NAME=ai-service \
 You should see a JSON span named `GET /health` printed to your terminal, with
 `"service.name": "ai-service"`. No OTel code, a real span.
 
-## 3. backend — manual, Go
+## 3. frontend — the browser starts the trace
 
-Go compiles to a static binary. There is no import hook, no runtime patching,
+[`frontend/src/telemetry.js`](../frontend/src/telemetry.js) registers the OTel
+Web SDK with two instrumentations: document load and `fetch`. `api/client.js` is
+not touched. Every `/api` call carries a `traceparent`, so the trace starts at
+the user's click and continues through Envoy, the backend and Postgres.
+
+- It is **off unless built with `VITE_OTEL_ENABLED=true`** (the CI image build
+  sets it). Vite bakes env vars in at build time, so this is a build arg, not a
+  Deployment env var.
+- Spans go to the relative URL `/otlp/v1/traces`. The Gateway routes that exact
+  path (POST only) to a dedicated Collector receiver on `:4319`, through its own
+  HTTPRoute (Envoy Gateway v1.2.1 cannot attach a rate limit to a single rule), so there is no
+  CORS and the browser never sees the Collector address. This needs the
+  `ReferenceGrant` in [`otlp-ingest.yaml`](observability/manifests/otlp-ingest.yaml).
+- That endpoint is public and unauthenticated, so it is treated as hostile
+  input: a separate pipeline, a 1 MiB body cap, a per-instance rate limit, and a
+  `resource/browser` processor that **forces** `service.name=devboard-frontend`.
+  A browser cannot pose as `backend`.
+- Sampling is `parentbased` ratio, 1.0 here. In production lower it
+  (`VITE_OTEL_SAMPLE_RATIO`) and tail-sample in the Collector.
+
+## 4. backend — manual, Go
+
+Go compiles to a static binary. (Zero-code Go exists, through eBPF: OpenTelemetry
+Go auto-instrumentation or the OTel Operator. It needs a privileged sidecar and
+sees fewer details, so this repo keeps the explicit SDK.) There is no import hook, no runtime patching,
 no `opentelemetry-instrument` equivalent. You wire the SDK yourself:
 [`backend/tracing.go`](../backend/tracing.go), about 60 lines.
 

@@ -30,6 +30,22 @@ jobs:
               run: docker build -t devboard-${{ matrix.folders }}:ci .
               working-directory: ${{ matrix.folders}}
 
+            # Make the auto-detected instrumentation set reviewable: bootstrap resolves
+            # packages at build time, so record what this build actually contains.
+            - name: Record OpenTelemetry bootstrap set
+              if: matrix.folders == 'ai-service'
+              run: |
+                mkdir -p reports
+                docker run --rm --entrypoint opentelemetry-bootstrap devboard-${{ matrix.folders }}:ci -a requirements > reports/otel-bootstrap-requirements.txt
+                cat reports/otel-bootstrap-requirements.txt
+
+            - name: Upload OpenTelemetry bootstrap set
+              if: matrix.folders == 'ai-service'
+              uses: actions/upload-artifact@v4
+              with:
+                name: otel-bootstrap-requirements
+                path: reports/otel-bootstrap-requirements.txt
+
             - name: Run Trivy vulnerability scanner
               uses: aquasecurity/trivy-action@v0.36.0
               continue-on-error: true

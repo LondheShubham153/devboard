@@ -13,6 +13,11 @@ export default defineConfig({
     host: true,
     port: 5173,
     proxy: {
+      // Browser spans -> a local Collector (docker run otel/opentelemetry-collector-contrib).
+      '/otlp': {
+        target: 'http://localhost:4318',
+        rewrite: (path) => path.replace(/^\/otlp/, ''),
+      },
       '/api/ai': {
         target: 'http://localhost:3005',
         changeOrigin: true,

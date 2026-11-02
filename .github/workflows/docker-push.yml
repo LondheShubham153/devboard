@@ -37,6 +37,11 @@ jobs:
         with:
           context: ./${{ matrix.folders }}
           push: true
+          # Only the frontend Dockerfile declares these; the others ignore them.
+          build-args: |
+            VITE_OTEL_ENABLED=true
+            VITE_OTEL_ENVIRONMENT=prod
+            VITE_APP_VERSION=${{ inputs.image_tag }}
           tags: |
             ${{ vars.DOCKERHUB_USERNAME }}/devboard-${{ matrix.folders }}:${{ inputs.image_tag }}
             ${{ vars.DOCKERHUB_USERNAME }}/devboard-${{ matrix.folders }}:latest

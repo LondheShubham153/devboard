@@ -51,6 +51,12 @@ spec:
               value: "true"
             - name: OTEL_PYTHON_LOG_CORRELATION
               value: "true"
+            - name: OTEL_PYTHON_EXCLUDED_URLS
+              value: health,metrics
+            - name: OTEL_TRACES_SAMPLER
+              value: parentbased_traceidratio
+            - name: OTEL_TRACES_SAMPLER_ARG
+              value: "1.0"
             {{- end }}
           livenessProbe:
             httpGet:

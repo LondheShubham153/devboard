@@ -1,0 +1,20 @@
+# Lets the devboard HTTPRoute send /otlp/v1/traces to the Collector in another
+# namespace. Gateway API denies cross-namespace backendRefs unless the target
+# namespace opts in; without this the rule is silently refused and the browser
+# gets no traces and no error. The rate limit lives next to the route (see
+# k8s/httproute-otlp.yml). For a Helm release outside `devboard`, change
+# from.namespace to the release namespace.
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: allow-devboard-otlp-ingest
+  namespace: observability
+spec:
+  from:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      namespace: devboard
+  to:
+    - group: ""
+      kind: Service
+      name: otel-collector-gateway
