@@ -9,7 +9,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-docker run --rm -v "$PWD":/work -w /work python:3.12-slim bash -euc '
+docker run --rm -v "$PWD":/work -w /work python:3.13-slim bash -euc '
   pip install -q --no-cache-dir pip-tools -r requirements.txt
   opentelemetry-bootstrap -a requirements > /tmp/otel.in
   cat requirements.txt /tmp/otel.in > /tmp/runtime.in
