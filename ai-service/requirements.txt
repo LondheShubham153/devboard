@@ -1,10 +1,10 @@
 # Edit THIS file, then run ./lock.sh. The image installs requirements.lock (hashed),
-# not this file. setuptools first — some deps still import pkg_resources, which isn't present
-# in python:3.12-slim by default.
-setuptools==80.9.0
-flask==3.0.3
-gunicorn==22.0.0
-httpx==0.27.2
+# not this file. setuptools is pinned for the build tooling. It no longer ships
+# pkg_resources (removed in setuptools 82); nothing here imports it (checked at runtime).
+setuptools==84.2.1
+flask==3.1.3
+gunicorn==26.2.0
+httpx==0.28.1
 prometheus-client==0.20.0
 
 # --- OpenTelemetry: zero-code instrumentation --------------------------------
@@ -23,12 +23,12 @@ prometheus-client==0.20.0
 # "zero-code" actually means in Python: the code doesn't change, the ENTRYPOINT
 # does. Compare with backend/tracing.go, which does the same job in ~60 lines.
 #
-# The version pairing is load-bearing: SDK 1.44.0 goes with distro 0.65b0, and
+# The version pairing is load-bearing: SDK 1.45.2 goes with distro 0.66b2, and
 # bootstrap resolves instrumentation versions from that distro release. Mixing
 # lines produces import errors that read like bugs in your app.
 #
 # We use the HTTP/protobuf exporter rather than gRPC on purpose: it avoids
 # pulling grpcio (a ~40 MB C-extension wheel) into the image, and OTLP/HTTP is
 # curl-able, which makes "is anything arriving?" a much shorter conversation.
-opentelemetry-distro==0.65b0
-opentelemetry-exporter-otlp-proto-http==1.44.0
+opentelemetry-distro==0.66b2
+opentelemetry-exporter-otlp-proto-http==1.45.2
