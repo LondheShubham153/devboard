@@ -42,6 +42,6 @@ jobs:
 
             - name: Python Tests
               run: |
-                pip install -r requirements.txt pytest
+                pip install --only-binary :all: -r requirements.txt pytest==9.2.0
                 python -m pytest
               working-directory: ai-service

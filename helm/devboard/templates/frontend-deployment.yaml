@@ -16,6 +16,8 @@ spec:
         {{- include "devboard.labels" . | nindent 8 }}
         app: devboard-frontend
     spec:
+      # No pod here calls the Kubernetes API, so do not hand it a token.
+      automountServiceAccountToken: false
       containers:
         - name: devboard-frontend
           image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag }}"

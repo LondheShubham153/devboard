@@ -44,7 +44,7 @@ jobs:
             - name: pip-audit
               continue-on-error: true
               run: |
-                pip install pip-audit
+                pip install --only-binary :all: pip-audit==2.10.1
                 pip-audit -r ai-service/requirements.txt | tee reports/ai-pip-audit.txt
 
             - name: Upload Reports

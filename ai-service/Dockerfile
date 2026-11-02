@@ -12,10 +12,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt \
-    # Detect every installed library and install its instrumentation package.
-    # Runs at build time so the image is self-contained; never at container start.
-    && opentelemetry-bootstrap -a install
+# Wheels only: a source distribution would run its setup.py during the build.
+# Bootstrap detects every installed library and emits the matching instrumentation
+# packages as pinned requirements. It runs at build time, never at container start.
+RUN pip install --no-cache-dir --only-binary :all: -r requirements.txt \
+    && opentelemetry-bootstrap -a requirements > otel-requirements.txt \
+    && pip install --no-cache-dir --only-binary :all: -r otel-requirements.txt
 
 COPY app ./app
 

@@ -17,6 +17,8 @@ spec:
         {{- include "devboard.labels" . | nindent 8 }}
         app: devboard-postgres
     spec:
+      # No pod here calls the Kubernetes API, so do not hand it a token.
+      automountServiceAccountToken: false
       containers:
         - name: postgres
           image: {{ .Values.postgres.image }}

@@ -17,6 +17,8 @@ spec:
       labels:
         app: ollama
     spec:
+      # No pod here calls the Kubernetes API, so do not hand it a token.
+      automountServiceAccountToken: false
       initContainers:
         - name: pull-model
           image: ollama/ollama:0.12.6
@@ -77,6 +79,7 @@ spec:
             limits:
               cpu: "1500m"
               memory: 4Gi       # 8 GiB nodes: room for a 3b model without OOMKill
+              ephemeral-storage: 1Gi   # models live on the PVC, not the container layer
           volumeMounts:
             - name: models
               mountPath: /root/.ollama
