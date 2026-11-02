@@ -41,7 +41,7 @@ jobs:
 
             - name: Upload OpenTelemetry bootstrap set
               if: matrix.folders == 'ai-service'
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@v7
               with:
                 name: otel-bootstrap-requirements
                 path: reports/otel-bootstrap-requirements.txt
