@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: devboard-frontend
-        image: trainwithshubham/devboard-frontend:sha-64518e5
+        image: trainwithshubham/devboard-frontend:sha-ed32fc2
         ports:
         - containerPort: 4173
         livenessProbe:
