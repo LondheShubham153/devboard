@@ -33,7 +33,7 @@ postgres:
 backend:
   image:
     repository: trainwithshubham/devboard-backend
-    tag: sha-64518e5
+    tag: sha-ed32fc2
     pullPolicy: IfNotPresent
   replicas: 1
   serviceName: backend
@@ -48,7 +48,7 @@ backend:
 frontend:
   image:
     repository: trainwithshubham/devboard-frontend
-    tag: sha-64518e5
+    tag: sha-ed32fc2
     pullPolicy: IfNotPresent
   replicas: 1
   containerPort: 4173
@@ -69,7 +69,7 @@ ai:
   enabled: true
   image:
     repository: trainwithshubham/devboard-ai-service
-    tag: sha-64518e5
+    tag: sha-ed32fc2
     pullPolicy: IfNotPresent
   replicas: 1
   serviceName: ai-service
