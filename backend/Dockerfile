@@ -16,7 +16,7 @@ COPY --from=builder /app/devboard-backend ./devboard-backend
 
 RUN chmod +x ./devboard-backend
 
-USER nonroot
+USER 65532:65532
 
 EXPOSE 8080
 

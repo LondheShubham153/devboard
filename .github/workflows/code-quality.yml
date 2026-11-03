@@ -40,9 +40,9 @@ jobs:
               working-directory: backend
 
             - name: Setup Python
-              uses: actions/setup-python@v5
+              uses: actions/setup-python@v7
               with:
-                python-version: '3.12'
+                python-version: '3.13'
 
             - name: Run Ruff
               run: |
