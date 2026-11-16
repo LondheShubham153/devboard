@@ -22,7 +22,7 @@ jobs:
 
 
      - name: Install npm packages
-       run: npm  install
+       run: npm  ci
        working-directory: frontend
 
 
