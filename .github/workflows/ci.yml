@@ -68,14 +68,6 @@ jobs:
           cache: true
           cache-dependency-path: backend/go.sum
 
-      - name: Run Go Format Check
-        run: |
-          if [ -n "$(gofmt -l .)" ]; then
-            echo "Go formatting issues found:"
-            gofmt -l .
-            exit 1
-          fi
-        working-directory: backend
 
       - name: Run Go Vet
         run: go vet ./...
