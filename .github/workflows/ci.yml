@@ -16,13 +16,13 @@ jobs:
      - name: Setup NodeJs  
        uses: actions/setup-node@v6
        with:
-        node-version: '20'
+        node-version: '22'
         cache: 'npm'
         cache-dependency-path: frontend/package-lock.json
 
 
      - name: Install npm packages
-       run: npm  ci
+       run: npm  install
        working-directory: frontend
 
 
