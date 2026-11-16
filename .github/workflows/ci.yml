@@ -22,15 +22,18 @@ jobs:
 
 
      - name: Install npm packages
-       run: npm --prefix frontend/package.json install
+       run: npm  install
+       working-directory: frontend
 
 
      - name: Run Linter
        run: npm run lint
+       working-directory: frontend
 
 
      - name: Run Tests
        run: npm test
+       working-directory: frontend
 
 
 
