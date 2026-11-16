@@ -2,7 +2,7 @@
 
 name: CD
 
-ON:
+on:
   workflow_run:
     workflows: ["CI"]
     types:
