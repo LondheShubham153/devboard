@@ -52,7 +52,7 @@ jobs:
           tags: ${{ vars.DOCKERHUB_USERNAME }}/devboard-fe-master:latest
 
   # =========================
-  # BACKEND CI/CD
+  # BACKEND CI/
   # =========================
   backend:
     runs-on: ubuntu-latest
