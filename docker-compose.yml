@@ -1,3 +1,5 @@
+name: devboard   # fixed project name, so volume names (devboard_pgdata) are predictable
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -17,10 +19,14 @@ services:
       - "${POSTGRES_HOST_PORT}:5432"
 
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      args:
+        GO_IMAGE: ${GO_IMAGE:-dhi.io/golang:1-alpine}
     image: trainwithshubham/devboard-backend:${IMAGE_TAG:-latest}
     environment:
       PORT: "${BACKEND_PORT}"
+      OTEL_SDK_DISABLED: "true"   # no collector locally
       POSTGRES_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable"
     depends_on:
       postgres:
@@ -29,12 +35,83 @@ services:
       - "${BACKEND_HOST_PORT}:${BACKEND_PORT}"   # host:container — direct curl/debug; the UI uses the gateway
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        NODE_BUILD_IMAGE: ${NODE_BUILD_IMAGE:-dhi.io/node:26-dev}
+        NODE_RUNTIME_IMAGE: ${NODE_RUNTIME_IMAGE:-dhi.io/node:26}
     image: trainwithshubham/devboard-frontend:${IMAGE_TAG:-latest}
     depends_on:
       - backend
+
+  # Local stand-in for the Envoy Gateway on EKS. It is the one door to the app.
+  gateway:
+    image: nginx:alpine
+    volumes:
+      - ./local/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./local/ai-proxy.conf:/etc/nginx/ai-proxy.conf:ro
+    depends_on:
+      frontend:
+        condition: service_started
+      # Only applies when the ai profile is on; otherwise it is ignored.
+      ai-service:
+        condition: service_healthy
+        required: false
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
     ports:
-      - "${FRONTEND_HOST_PORT}:4173"   # vite preview serves on 4173 inside the container
+      - "${FRONTEND_HOST_PORT}:80"
+
+  # --- AI assistant (optional): docker compose --profile ai up --build ---
+  ollama:
+    profiles: ["ai"]
+    image: ollama/ollama:latest
+    volumes:
+      - ollama:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # One-shot: downloads the model into the ollama volume, then exits.
+  ollama-pull:
+    profiles: ["ai"]
+    image: ollama/ollama:latest
+    # Retries: a 1.3 GB download can fail once on a flaky network; a retry resumes it.
+    entrypoint:
+      - sh
+      - -c
+      - 'for i in 1 2 3 4 5; do ollama pull "$${MODEL_NAME:-llama3.2:1b}" && exit 0; echo "pull failed, retry $$i"; sleep 5; done; exit 1'
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+      MODEL_NAME: "${MODEL_NAME:-llama3.2:1b}"
+    depends_on:
+      ollama:
+        condition: service_healthy
+    restart: "no"
+
+  ai-service:
+    profiles: ["ai"]
+    build: ./ai-service
+    image: trainwithshubham/devboard-ai-service:${IMAGE_TAG:-latest}
+    environment:
+      MODEL_API_BASE: http://ollama:11434/v1
+      MODEL_NAME: "${MODEL_NAME:-llama3.2:1b}"
+      TASK_SERVICE_URL: "http://backend:${BACKEND_PORT}"
+      # No collector locally: keep auto-instrumentation but export nowhere.
+      OTEL_TRACES_EXPORTER: none
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+    depends_on:
+      backend:
+        condition: service_started
+      ollama-pull:
+        condition: service_completed_successfully
 
 volumes:
   pgdata:
+  ollama:

@@ -1,8 +1,9 @@
 help:
 	@echo ""
 	@echo "DevBoard commands:"
-	@echo "  make setup   create your .env file (first time only)"
+	@echo "  make setup   create or refresh .env and check Docker and ports"
 	@echo "  make up      build and start everything"
+	@echo "  make up-ai   same, plus the AI assistant (downloads a ~1.3 GB model once)"
 	@echo "  make down    stop everything"
 	@echo "  make logs    watch the logs"
 	@echo "  make ps      show what is running"
@@ -11,14 +12,21 @@ help:
 	@echo ""
 
 setup:
-	@test -f .env || cp .env.example .env
-	@echo ".env is ready"
+	@./local/setup.sh
 
+# Builds, starts detached and waits until every service is healthy.
 up: setup
-	docker compose up --build
+	docker compose up -d --build --wait
+	@echo ""
+	@echo "DevBoard is ready: http://localhost:$$(grep '^FRONTEND_HOST_PORT=' .env | cut -d= -f2)"
+
+up-ai: setup
+	docker compose --profile ai up -d --build --wait
+	@echo ""
+	@echo "DevBoard + AI assistant are ready: http://localhost:$$(grep '^FRONTEND_HOST_PORT=' .env | cut -d= -f2)"
 
 down:
-	docker compose down
+	docker compose --profile ai down
 
 logs:
 	docker compose logs -f
@@ -26,9 +34,11 @@ logs:
 ps:
 	docker compose ps
 
+# Wipes the database only. The downloaded AI model (ollama volume) is kept.
 reset:
-	docker compose down -v
-	docker compose up --build
+	docker compose --profile ai down
+	docker volume rm -f devboard_pgdata
+	$(MAKE) up
 
 smoke:
 	@echo "backend health:"
@@ -40,4 +50,4 @@ smoke:
 	curl -s "http://localhost:8080/api/tasks?project_id=1"
 	@echo ""
 
-.PHONY: help setup up down logs ps reset smoke
+.PHONY: help setup up up-ai down logs ps reset smoke
