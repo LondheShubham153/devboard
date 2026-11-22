@@ -58,17 +58,61 @@ if [ "$DRY_RUN" != 1 ] && kube_ready; then
   ok "Argo CD applications removed"
 
   say "Delete the namespaces (this releases the load balancers and EBS volumes)"
-  kubectl delete namespace "${NAMESPACES[@]}" --ignore-not-found --wait=false >/dev/null 2>&1 || true
-  ns_gone() { [ -z "$(kubectl get namespace "${NAMESPACES[@]}" -o name 2>/dev/null)" ]; }
-  wait_until 900 ns_gone || warn "some namespaces are still Terminating: kubectl get ns"
+  # Order matters. The app namespaces go first, while cert-manager and External Secrets
+  # are still running: cert-manager Challenges hold finalizers, and an ExternalSecret can
+  # only be deleted while its admission webhook is alive. Deleting everything at once
+  # leaves the app namespace stuck Terminating.
+  delete_ns() { # delete_ns <timeout-seconds> <namespace...>; fails if any remain
+    local limit="$1" waited=0
+    shift
+    kubectl delete namespace "$@" --ignore-not-found --wait=false >/dev/null 2>&1 || true
+    while [ -n "$(kubectl get namespace "$@" -o name 2>/dev/null)" ]; do
+      [ "$waited" -ge "$limit" ] && return 1
+      sleep 10
+      waited=$((waited + 10))
+    done
+  }
+  strip_finalizers() { # last resort for namespaces stuck Terminating
+    local ns kind obj
+    while read -r obj; do
+      kubectl delete "$obj" --ignore-not-found >/dev/null 2>&1 || true
+    done < <(kubectl get validatingwebhookconfiguration -o name 2>/dev/null | grep -i externalsecret || true)
+    for ns in "$@"; do
+      for kind in challenges.acme.cert-manager.io orders.acme.cert-manager.io \
+                  certificaterequests.cert-manager.io certificates.cert-manager.io \
+                  externalsecrets.external-secrets.io; do
+        while read -r obj; do
+          kubectl -n "$ns" patch "$obj" --type merge -p '{"metadata":{"finalizers":null}}' >/dev/null 2>&1 || true
+        done < <(kubectl -n "$ns" get "$kind" -o name 2>/dev/null)
+      done
+    done
+  }
+
+  if ! delete_ns 300 devboard devboard-helm; then
+    warn "app namespaces are stuck: stripping finalizers"
+    strip_finalizers devboard devboard-helm
+    delete_ns 120 devboard devboard-helm || warn "app namespaces still Terminating: kubectl get ns"
+  fi
+  delete_ns 600 ollama observability || warn "ollama/observability still Terminating (their PVCs are checked below)"
+  delete_ns 300 external-secrets cert-manager || warn "controllers still Terminating"
 
   say "Confirm nothing is left to orphan"
-  clean() {
-    [ -z "$(kubectl -n envoy-gateway-system get svc -o jsonpath='{range .items[?(@.spec.type=="LoadBalancer")]}{.metadata.name}{"\n"}{end}' 2>/dev/null)" ] \
-      && [ -z "$(kubectl get gateway -A -o name 2>/dev/null)" ] \
-      && [ -z "$(kubectl get pvc -A -o name 2>/dev/null)" ]
+  # kq fails closed: an API error (expired credentials, unreachable cluster) is NOT
+  # treated as "nothing left", or terraform destroy could orphan load balancers.
+  # A resource type that does not exist counts as empty.
+  kq() {
+    local out
+    if out="$(kubectl "$@" 2>&1)"; then printf '%s' "$out"; return 0; fi
+    case "$out" in *"doesn't have a resource type"*|*"not found"*|*NotFound*) return 0 ;; *) return 1 ;; esac
   }
-  wait_until 900 clean || die "LoadBalancer services, Gateways or PVCs remain. Destroying now would orphan them. Check: kubectl get svc,gateway,pvc -A"
+  clean() {
+    local svc gws pvcs
+    svc="$(kq -n envoy-gateway-system get svc -o jsonpath='{range .items[?(@.spec.type=="LoadBalancer")]}{.metadata.name}{"\n"}{end}')" || return 1
+    gws="$(kq get gateway -A -o name)" || return 1
+    pvcs="$(kq get pvc -A -o name)" || return 1
+    [ -z "$svc" ] && [ -z "$gws" ] && [ -z "$pvcs" ]
+  }
+  wait_until 900 clean || die "LoadBalancer services, Gateways or PVCs remain (or the cluster cannot be queried). Destroying now could orphan them. Check: kubectl get svc,gateway,pvc -A"
   ok "no LoadBalancer services, Gateways or PVCs"
 
   say "Remove Envoy Gateway"
