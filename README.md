@@ -48,6 +48,7 @@ place of the Envoy Gateway.
 | --- | --- |
 | Run it on my laptop in one command | [Quick start](#quick-start-local) |
 | Understand it by building it by hand | [Part 1](#part-1--the-manual-way-do-it-by-hand-to-understand-it) |
+| Deploy to EKS with one command | [Automated EKS](#automated-eks-make-cluster-up) |
 | Deploy to EKS with explanations (15 chapters) | [`gitops/README.md`](gitops/README.md) |
 | Deploy to EKS, commands only | [`Deploy.md`](Deploy.md) |
 | Work on the code or the pipeline | [For DevOps engineers](#for-devops-engineers) |
@@ -84,6 +85,50 @@ on EKS and uses the same routes. Without `make up-ai` the app works normally and
 the AI buttons return an error.
 
 ---
+
+## Automated EKS (`make cluster-up`)
+
+From an empty AWS account to a running DevBoard, with no manual steps:
+
+```bash
+aws configure                 # once; or aws sso login
+make cluster-up               # about 25-35 minutes the first time
+make cluster-https            # optional: DNS + a Let's Encrypt certificate
+make cluster-down             # tear it all down in the right order
+```
+
+`make cluster-up` is idempotent, so you can re-run it after a failure. It does,
+in order:
+
+1. creates the Terraform state bucket and writes `terraform/backend.hcl`
+2. builds the VPC and EKS cluster with Terraform (and installs Argo CD)
+3. generates a random database password into AWS Secrets Manager (never printed)
+4. points Argo CD at *your* fork and branch, and commits the change
+5. pushes the branch, because Argo CD reads GitHub and not your laptop
+6. installs Envoy Gateway, the platform and the app (`scripts/deploy.sh`), and
+   waits until the `ClusterSecretStore` is Valid
+7. waits for the AI model to download and checks `/api/ai/health`
+
+Settings are environment variables: `REGION` (default `us-west-2`), `CLUSTER`
+(default `devboard`), `BRANCH` (default: your current branch) and `HTTPS=1` to
+run the HTTPS step as part of `cluster-up`. Add `DRY_RUN=1` to any command to
+print what it would do without changing anything.
+
+Other commands:
+
+| Command | What it does |
+| --- | --- |
+| `make cluster-https` | creates the DNS record if the domain's zone is in your Route 53 (otherwise prints the CNAME and waits for it), then issues a staging certificate, switches to production, and checks HTTP redirects to HTTPS |
+| `make ci-secrets` | sets `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`, `SONAR_TOKEN` and `SONAR_HOST_URL` in GitHub from environment variables (needs `gh auth login`) |
+| `make cluster-down` | asks you to type the cluster name, then removes Argo CD finalizers, deletes the namespaces so the load balancers and EBS volumes are released, waits until none remain, runs `terraform destroy`, removes the state bucket (`KEEP_STATE=1` keeps it) and lists anything still billing |
+
+What no script can do for you: AWS credentials, a Docker Hub token, a SonarQube
+token, and a Route 53 zone for your domain (or one manual CNAME at your DNS
+provider). The scripts only act on the cluster named `CLUSTER` in `REGION`, and
+refuse to run if `kubectl` points anywhere else.
+
+> **It costs about $11 a day while it runs.** Run `make cluster-down` when you
+> are done, then check the AWS console.
 
 ## What you need (for Parts 1-3)
 
@@ -309,6 +354,10 @@ terraform/             VPC, EKS, IAM, Pod Identity, Secrets Manager, Argo CD ins
 terraform/bootstrap/   the S3 state bucket (local state, run once)
 gitops/                Argo CD apps, Gateway, cert-manager, External Secrets, observability, Ollama
 ansible/               optional: prepares an EC2 admin box with the CLI tools
+scripts/cluster-up.sh  state bucket, cluster, secret, Argo CD rewire, platform, app, AI (make cluster-up)
+scripts/cluster-https.sh  DNS and a Let's Encrypt certificate (make cluster-https)
+scripts/cluster-down.sh   ordered teardown that frees load balancers and volumes (make cluster-down)
+scripts/ci-secrets.sh  sets the GitHub Actions secrets from env vars (make ci-secrets)
 scripts/deploy.sh      installs Envoy Gateway, the platform and the app after Terraform
 .github/workflows/     DevSecOps pipeline (reusable workflows) and Terraform checks
 ```

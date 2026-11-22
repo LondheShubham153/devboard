@@ -7,8 +7,15 @@ help:
 	@echo "  make down    stop everything"
 	@echo "  make logs    watch the logs"
 	@echo "  make ps      show what is running"
-	@echo "  make reset   wipe the database and start fresh"
+	@echo "  make reset   wipe the database (keeps the AI model) and start fresh"
 	@echo "  make smoke   quick check that everything works"
+	@echo ""
+	@echo "EKS (needs AWS credentials; costs about \$$11/day while it runs):"
+	@echo "  make cluster-up       state bucket, cluster, secret, Argo CD, platform, app, AI"
+	@echo "  make cluster-https    DNS + Let's Encrypt certificate (after cluster-up)"
+	@echo "  make ci-secrets       set the GitHub Actions secrets from env vars"
+	@echo "  make cluster-down     tear it all down in the right order"
+	@echo "  (add DRY_RUN=1 to any of them to print instead of change)"
 	@echo ""
 
 setup:
@@ -50,4 +57,16 @@ smoke:
 	curl -s "http://localhost:8080/api/tasks?project_id=1"
 	@echo ""
 
-.PHONY: help setup up up-ai down logs ps reset smoke
+cluster-up:
+	./scripts/cluster-up.sh
+
+cluster-https:
+	./scripts/cluster-https.sh
+
+ci-secrets:
+	./scripts/ci-secrets.sh
+
+cluster-down:
+	./scripts/cluster-down.sh
+
+.PHONY: cluster-up cluster-https ci-secrets cluster-down help setup up up-ai down logs ps reset smoke

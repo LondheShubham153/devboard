@@ -90,6 +90,23 @@ else
   warn "not ready — check: kubectl -n argocd get app cert-manager"
 fi
 
+say "Waiting for the ClusterSecretStore (proves region, Pod Identity and IAM together)"
+css_ready() {
+  [ "$(kubectl get clustersecretstore aws-secrets-manager \
+        -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null)" = "True" ]
+}
+waited=0
+until css_ready; do
+  if [ "$waited" -ge 600 ]; then
+    echo "ClusterSecretStore aws-secrets-manager is not Valid after 10 minutes."
+    echo "  kubectl describe clustersecretstore aws-secrets-manager"
+    echo "  Check the region in gitops/external-secrets/cluster-secret-store.yaml"
+    exit 1
+  fi
+  sleep 10; waited=$((waited + 10))
+done
+ok "ClusterSecretStore is Valid"
+
 # --- 3. The application ---
 say "DevBoard (raw manifests -> namespace 'devboard')"
 kubectl apply -f gitops/argocd/devboard-raw.yaml >/dev/null
