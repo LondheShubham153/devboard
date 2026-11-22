@@ -10,7 +10,7 @@ spec:
 
   source:
     repoURL: https://github.com/LondheShubham153/devboard.git
-    targetRevision: mega-project
+    targetRevision: eks-demo
     path: gitops/observability/manifests
 
   destination:

@@ -18,7 +18,7 @@ spec:
           - $values/gitops/observability/prometheus-values.yaml
 
     - repoURL: https://github.com/LondheShubham153/devboard.git
-      targetRevision: mega-project
+      targetRevision: eks-demo
       ref: values
 
   destination:

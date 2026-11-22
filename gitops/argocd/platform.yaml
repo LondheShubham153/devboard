@@ -8,7 +8,7 @@ spec:
 
   source:
     repoURL: https://github.com/LondheShubham153/devboard.git
-    targetRevision: mega-project
+    targetRevision: eks-demo
     path: gitops/argocd/platform
 
   destination:
