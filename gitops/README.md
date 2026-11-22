@@ -8,7 +8,7 @@ You'll build:
 
 - **EKS via Terraform** — the VPC, subnets, NAT and IAM that `eksctl` used to
   hide from you, with remote state in S3
-- **Envoy Gateway** for a public URL (Gateway API → AWS NLB)
+- **Envoy Gateway** for a public URL (Gateway API → AWS load balancer)
 - **ArgoCD** deploying the app from Git — **two ways**, raw manifests (`k8s/`)
   and a Helm chart (`helm/devboard/`), side by side so you can compare them
 - **AWS Secrets Manager + External Secrets Operator** — no credentials in Git,
@@ -20,7 +20,7 @@ You'll build:
 ## Architecture
 
 ```
-Internet ─▶ Envoy Gateway (NLB) ─┬─ /           ─▶ frontend ─▶ /api ─▶ backend ─▶ postgres
+Internet ─▶ Envoy Gateway (ELB) ─┬─ /           ─▶ frontend ─▶ /api ─▶ backend ─▶ postgres
                                  └─ /api/ai/*   ─▶ ai-service ─▶ Ollama
 
 AWS Secrets Manager ─▶ External Secrets Operator ─▶ Secret ─▶ backend + postgres
@@ -79,7 +79,7 @@ everything ──OTLP──▶ OpenTelemetry Collector ─┬─▶ Tempo      (
 | EKS control plane | $73 |
 | 3 × t3.large | $182 |
 | NAT Gateway (one, not three) | $33 |
-| NLB per Gateway | $17 (×2 if you run both stacks) |
+| Load balancer per Gateway | $17 (×2 if you run both stacks) |
 | EBS — nodes, Postgres, Ollama, Prometheus/Tempo/Loki | $11 |
 | CloudWatch logs (audit + authenticator, 7-day retention) | $2–8 |
 | KMS key for EKS envelope encryption | $1 |

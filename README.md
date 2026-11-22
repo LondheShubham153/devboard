@@ -23,21 +23,21 @@ build a big product. There is no login and no cache.
 
 ![DevBoard architecture: build and ship, platform, runtime on EKS, observe](docs/architecture.png)
 
-Read it left to right in the numbered order:
+Read the four lanes left to right:
 
-1. **Build and ship (1-4):** a push to GitHub triggers GitHub Actions (lint,
-   tests, Gitleaks, Trivy, SonarQube). Images go to Docker Hub, and a bot commit
-   writes the new `sha-` tag back to Git. CI never touches the cluster.
-2. **Platform (5-6):** Terraform creates the VPC and the EKS cluster (state in S3).
+1. **Build and ship:** a push to GitHub triggers GitHub Actions (lint, tests,
+   Gitleaks, Trivy, SonarQube). Images go to Docker Hub, and a bot commit writes
+   the new `sha-` tag back to Git. CI never touches the cluster.
+2. **Platform:** Terraform creates the VPC and the EKS cluster (state in S3).
    Argo CD watches Git and deploys into EKS.
-3. **Runtime (7-10):** the browser reaches the Envoy Gateway through an AWS NLB.
-   `/` goes to the React frontend, which calls the Go backend and Postgres.
-   `/api/ai/*` goes to the Python AI service, which reads tasks from the backend
-   and prompts Ollama. External Secrets feeds the passwords from AWS Secrets
-   Manager, so none live in Git.
-4. **Observe (11-12):** the frontend, backend and AI service send OTLP to the
-   OpenTelemetry Collector, which feeds Tempo, Loki and Prometheus, all viewed in
-   Grafana.
+3. **Runtime on EKS:** the browser reaches the Envoy Gateway through an AWS load
+   balancer (a Classic ELB). `/` goes to the React frontend, which calls the Go
+   backend and Postgres. `/api/ai/*` goes to the Python AI service, which reads
+   tasks from the backend and prompts Ollama. External Secrets feeds the passwords
+   from AWS Secrets Manager, so none live in Git.
+4. **Observe:** the backend and AI service send OTLP to the OpenTelemetry
+   Collector, and the Gateway forwards the browser's and Envoy's traces to it. The
+   Collector feeds Tempo, Loki and Prometheus, all viewed in Grafana.
 
 Locally, Docker Compose runs the same runtime lane, with an nginx container in
 place of the Envoy Gateway.
