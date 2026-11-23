@@ -3,7 +3,7 @@
 # pkg_resources (removed in setuptools 82); nothing here imports it (checked at runtime).
 setuptools==84.2.1
 flask==3.1.3
-gunicorn==26.2.0
+gunicorn==27.0.1
 httpx==0.28.1
 prometheus-client==0.20.0
 
