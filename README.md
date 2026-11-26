@@ -1,39 +1,139 @@
-# DevBoard — Advanced (UI + Go + Postgres)
+# DevBoard
 
-This is the same DevBoard UI as the `master` branch, but now the data comes
-from a **real backend** instead of fake in-memory data.
+A small task tracker (projects, tasks, a kanban board, and an AI assistant) built
+to teach the full path from `docker compose up` to production on AWS: GitOps,
+Terraform, secrets, observability and a DevSecOps pipeline.
 
-Three pieces talk to each other:
+It is deliberately small. The point is to *see how the pieces connect*, not to
+build a big product. There is no login and no cache.
 
-```
-browser  →  frontend (React)  →  backend (Go API)  →  database (Postgres)
-```
+| Piece | Tech |
+| --- | --- |
+| Frontend | React 18, Vite, Tailwind, React Query |
+| Backend | Go (Gin), Postgres via `database/sql` + `lib/pq` |
+| AI service | Python 3.13, Flask + gunicorn, streams answers over SSE |
+| Model | Ollama running `llama3.2:1b` (self-hosted, no API key) |
+| Database | Postgres 16 |
+| Cluster | EKS 1.34 built with Terraform, Envoy Gateway (Gateway API) |
+| Delivery | GitHub Actions, Docker Hub, Argo CD (GitOps), Helm or raw manifests |
+| Secrets | AWS Secrets Manager + External Secrets Operator, Pod Identity |
+| Observability | OpenTelemetry Collector, Tempo, Loki, Prometheus, Grafana |
 
-- **frontend** — the React app. It also forwards anything starting with `/api`
-  to the backend.
-- **backend** — a small Go program that reads and writes the database.
-- **database** — Postgres, with some example projects and tasks loaded on first
-  start.
+## Architecture
 
-There's no login and no AI here on purpose. The whole point is to *see how the
-pieces connect*.
+![DevBoard architecture: build and ship, platform, runtime on EKS, observe](docs/architecture.png)
 
-> **Deploying to Kubernetes?** This branch ships the full mega-project guide —
-> EKS built with **Terraform**, Argo CD + Helm + Gateway API, credentials in
-> **AWS Secrets Manager**, **OpenTelemetry** tracing across all three tiers, and
-> a GitHub Actions pipeline that builds SHA-tagged images and commits them back
-> for Argo CD to sync. Fifteen chapters, starting at
-> [`gitops/README.md`](gitops/README.md).
->
-> **In a hurry?** [`Deploy.md`](Deploy.md) is the command-by-command runbook —
-> every step from an empty AWS account to HTTPS on your own domain.
+Read the four lanes left to right:
+
+1. **Build and ship:** a push to GitHub triggers GitHub Actions (lint, tests,
+   Gitleaks, Trivy, SonarQube). Images go to Docker Hub, and a bot commit writes
+   the new `sha-` tag back to Git. CI never touches the cluster.
+2. **Platform:** Terraform creates the VPC and the EKS cluster (state in S3).
+   Argo CD watches Git and deploys into EKS.
+3. **Runtime on EKS:** the browser reaches the Envoy Gateway through an AWS load
+   balancer (a Classic ELB). `/` goes to the React frontend, which calls the Go
+   backend and Postgres. `/api/ai/*` goes to the Python AI service, which reads
+   tasks from the backend and prompts Ollama. External Secrets feeds the passwords
+   from AWS Secrets Manager, so none live in Git.
+4. **Observe:** the backend and AI service send OTLP to the OpenTelemetry
+   Collector, and the Gateway forwards the browser's and Envoy's traces to it. The
+   Collector feeds Tempo, Loki and Prometheus, all viewed in Grafana.
+
+Locally, Docker Compose runs the same runtime lane, with an nginx container in
+place of the Envoy Gateway.
+
+## Choose your path
+
+| I want to... | Go to |
+| --- | --- |
+| Run it on my laptop in one command | [Quick start](#quick-start-local) |
+| Understand it by building it by hand | [Part 1](#part-1--the-manual-way-do-it-by-hand-to-understand-it) |
+| Deploy to EKS with one command | [Automated EKS](#automated-eks-make-cluster-up) |
+| Deploy to EKS with explanations (15 chapters) | [`gitops/README.md`](gitops/README.md) |
+| Deploy to EKS, commands only | [`Deploy.md`](Deploy.md) |
+| Work on the code or the pipeline | [For DevOps engineers](#for-devops-engineers) |
+
+> **Cost warning for EKS:** budget about **$330 a month (about $11 a day)**. Do
+> [`gitops/15-cleanup.md`](gitops/15-cleanup.md) when you are done. Steps 2 and 3
+> there are the ones that stop the billing.
 
 ---
 
-## What you need
+## Quick start (local)
+
+You need **Docker** (with Compose) and `make`. No Node, Go, Python or Postgres,
+and no logins or tokens.
+
+```bash
+make up        # the app: frontend, backend, Postgres      -> http://localhost:8080
+make up-ai     # the same, plus Ollama and the AI service  (first run downloads ~1.3 GB)
+make smoke     # quick end-to-end check
+make down      # stop everything
+```
+
+`make up` creates `.env` for you, checks that Docker is running and the ports are
+free, builds everything, and returns once every service is healthy.
+
+| Service | URL | Notes |
+| --- | --- | --- |
+| App (via gateway) | http://localhost:8080 | the one door; also serves `/api/ai/*` with `make up-ai` |
+| Backend | http://localhost:8081/health | direct access for debugging |
+| Postgres | localhost:5432 | `devboard` / `devboard` |
+
+Locally, a small nginx container (`gateway`) plays the part of the Envoy Gateway
+on EKS and uses the same routes. Without `make up-ai` the app works normally and
+the AI buttons return an error.
+
+---
+
+## Automated EKS (`make cluster-up`)
+
+From an empty AWS account to a running DevBoard, with no manual steps:
+
+```bash
+aws configure                 # once; or aws sso login
+make cluster-up               # about 25-35 minutes the first time
+make cluster-https            # optional: DNS + a Let's Encrypt certificate
+make cluster-down             # tear it all down in the right order
+```
+
+`make cluster-up` is idempotent, so you can re-run it after a failure. It does,
+in order:
+
+1. creates the Terraform state bucket and writes `terraform/backend.hcl`
+2. builds the VPC and EKS cluster with Terraform (and installs Argo CD)
+3. generates a random database password into AWS Secrets Manager (never printed)
+4. points Argo CD at *your* fork and branch, and commits the change
+5. pushes the branch, because Argo CD reads GitHub and not your laptop
+6. installs Envoy Gateway, the platform and the app (`scripts/deploy.sh`), and
+   waits until the `ClusterSecretStore` is Valid
+7. waits for the AI model to download and checks `/api/ai/health`
+
+Settings are environment variables: `REGION` (default `us-west-2`), `CLUSTER`
+(default `devboard`), `BRANCH` (default: your current branch) and `HTTPS=1` to
+run the HTTPS step as part of `cluster-up`. Add `DRY_RUN=1` to any command to
+print what it would do without changing anything.
+
+Other commands:
+
+| Command | What it does |
+| --- | --- |
+| `make cluster-https` | creates the DNS record if the domain's zone is in your Route 53 (otherwise prints the CNAME and waits for it), then issues a staging certificate, switches to production, and checks HTTP redirects to HTTPS |
+| `make ci-secrets` | sets `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`, `SONAR_TOKEN` and `SONAR_HOST_URL` in GitHub from environment variables (needs `gh auth login`) |
+| `make cluster-down` | asks you to type the cluster name, then removes Argo CD finalizers, deletes the namespaces so the load balancers and EBS volumes are released, waits until none remain, runs `terraform destroy`, removes the state bucket (`KEEP_STATE=1` keeps it) and lists anything still billing |
+
+What no script can do for you: AWS credentials, a Docker Hub token, a SonarQube
+token, and a Route 53 zone for your domain (or one manual CNAME at your DNS
+provider). The scripts only act on the cluster named `CLUSTER` in `REGION`, and
+refuse to run if `kubectl` points anywhere else.
+
+> **It costs about $11 a day while it runs.** Run `make cluster-down` when you
+> are done, then check the AWS console.
+
+## What you need (for Parts 1-3)
 
 - **Docker** (with Docker Compose, which comes with Docker Desktop).
-- That's it. You do **not** need Node, Go, or Postgres installed — they all run
+- That's it for the hands-on parts below. You do **not** need Node, Go, or Postgres installed — they all run
   inside containers.
 
 ---
@@ -181,6 +281,7 @@ available:
 make           # list all commands
 make setup     # create your .env file (first time only)
 make up        # build and start everything
+make up-ai     # same, plus the AI assistant
 make down      # stop everything
 make logs      # watch the logs
 make reset     # wipe the database and start fresh
@@ -188,6 +289,15 @@ make smoke     # quick check that everything works
 ```
 
 `make up` creates `.env` for you automatically, so it's the simplest way to start.
+
+### Optional: the AI assistant
+
+`make up-ai` (or `docker compose --profile ai up --build`) also starts Ollama and
+the Python `ai-service`. The first run downloads the model (about 1.3 GB), so
+give it a few minutes. A small nginx container (`gateway`) plays the part of the
+Envoy Gateway on EKS: it sends `/api/ai/*` to `ai-service` and everything else to
+the frontend. Without the AI profile the app works normally and the AI buttons
+return an error.
 
 > `make` is optional. It's already available on Linux and macOS (on macOS you may
 > need Xcode Command Line Tools: `xcode-select --install`). On Windows, either use
@@ -223,17 +333,177 @@ The browser calls these as `/api/...`; the backend serves them at the root.
 | GET    | `/search?q=&project_id=N` | search tasks by title                 |
 | GET    | `/health`                 | health check                          |
 
-## Folder layout
+---
+
+## For DevOps engineers
+
+### Repository layout
 
 ```
-.
-├── docker-compose.yml   starts frontend + backend + postgres together
-├── Makefile             short commands (make up, make down, ...)
-├── .env.example         template for settings (copy to .env)
-├── frontend/            React app (Vite). Serves the UI, forwards /api
-├── backend/             Go API (main.go + Dockerfile)
-└── init/postgres/       schema + example data, loaded on first start
+docker-compose.yml     local stack: postgres, backend, frontend, gateway (+ ollama, ai-service with --profile ai)
+Makefile               make up / up-ai / down / reset / smoke / logs
+.env.example           local settings; copied to .env (gitignored)
+local/                 nginx gateway config and setup.sh (.env refresh + preflight checks)
+frontend/              React app (Vite). `vite preview` serves it and proxies /api
+backend/               Go API: main.go, tracing.go (OpenTelemetry)
+ai-service/            Python AI microservice (Flask, gunicorn, hashed requirements.lock)
+init/postgres/         schema and seed data, loaded on first boot
+k8s/                   raw Kubernetes manifests
+helm/devboard/         the same app as a Helm chart
+terraform/             VPC, EKS, IAM, Pod Identity, Secrets Manager, Argo CD install
+terraform/bootstrap/   the S3 state bucket (local state, run once)
+gitops/                Argo CD apps, Gateway, cert-manager, External Secrets, observability, Ollama
+ansible/               optional: prepares an EC2 admin box with the CLI tools
+scripts/cluster-up.sh  state bucket, cluster, secret, Argo CD rewire, platform, app, AI (make cluster-up)
+scripts/cluster-https.sh  DNS and a Let's Encrypt certificate (make cluster-https)
+scripts/cluster-down.sh   ordered teardown that frees load balancers and volumes (make cluster-down)
+scripts/ci-secrets.sh  sets the GitHub Actions secrets from env vars (make ci-secrets)
+scripts/deploy.sh      installs Envoy Gateway, the platform and the app after Terraform
+.github/workflows/     DevSecOps pipeline (reusable workflows) and Terraform checks
 ```
+
+### Ports and routes
+
+| Service | Container port | Local host port | Notes |
+| --- | --- | --- | --- |
+| gateway (nginx) | 80 | 8080 | local only; Envoy Gateway on EKS |
+| frontend | 4173 | none | reached through the gateway |
+| backend | 8080 | 8081 | `PORT` env var |
+| ai-service | 3005 | none | `/summarise`, `/ask`, `/health`, `/metrics` |
+| postgres | 5432 | 5432 | |
+| ollama | 11434 | none | OpenAI-compatible API under `/v1` |
+
+Routing, identical locally and on EKS (`k8s/httproute.yml`):
+
+- `/api/ai/summarise`, `/api/ai/ask`, `/api/ai/health` go to ai-service. They are
+  exact matches on purpose, so `/metrics` is never reachable from outside.
+- Everything else goes to the frontend, which forwards `/api/*` to the backend
+  with the `/api` prefix removed.
+
+### Configuration
+
+| Variable | Used by | Default |
+| --- | --- | --- |
+| `POSTGRES_URL` | backend | built by Compose from the `POSTGRES_*` values |
+| `PORT` | backend | `8080` |
+| `TASK_SERVICE_URL` | ai-service | `http://backend:8080` |
+| `MODEL_API_BASE` | ai-service | `http://ollama.ollama.svc.cluster.local:11434/v1` (Compose overrides it) |
+| `MODEL_NAME` | ai-service, ollama-pull | `llama3.2:1b` |
+| `MODEL_API_KEY` | ai-service | empty; set it to use a hosted OpenAI-compatible provider |
+| `OTEL_EXPORTER_OTLP_*`, `OTEL_SERVICE_NAME` | backend, ai-service | set in the cluster; telemetry is switched off locally |
+| `VITE_OTEL_ENABLED` | frontend (build time) | `false` |
+| `GO_IMAGE`, `NODE_BUILD_IMAGE`, `NODE_RUNTIME_IMAGE` | Compose builds | public images in `.env.example` |
+
+### Docker Hardened Images
+
+The Dockerfiles default to Docker Hardened Images (`dhi.io`), which need
+`docker login dhi.io`. CI uses them. For local builds `.env.example` points the
+build args at public `golang` and `node` images so nothing needs a login. Delete
+those three lines from `.env` to use the hardened images locally.
+
+### Secrets
+
+No credentials live in Git and no access keys exist anywhere.
+
+```
+AWS Secrets Manager (devboard/postgres)
+   -> External Secrets Operator (EKS Pod Identity)
+   -> Kubernetes Secret devboard-secrets
+   -> backend and postgres
+```
+
+Locally the values come from `.env` (`devboard` / `devboard`, for development
+only).
+
+### CI/CD
+
+Push to `mega-project` runs `.github/workflows/devsecops.yml`:
+
+1. **Gates, in parallel:** code quality (eslint, `go fmt`/`vet`, ruff), Gitleaks,
+   dependency checks (govulncheck, npm audit), Dockerfile lint (hadolint) and
+   Trivy image scan, SonarQube, and tests (Vitest, `go test`, pytest).
+2. **Build and push:** backend, frontend and ai-service images go to Docker Hub
+   tagged `sha-<7 chars>`.
+3. **GitOps bump:** the new tags are written into `k8s/` and
+   `helm/devboard/values.yaml` and committed back. Argo CD syncs from Git.
+
+Other workflows: `terraform-ci.yml` (fmt, validate, tflint), `dast.yml` (OWASP
+ZAP) and `matrix.yml` (manual Go version matrix). Dependabot covers GitHub
+Actions, Terraform, Go, npm, pip and Docker.
+
+### GitOps rules to know
+
+- Every Argo CD app runs with `selfHeal: true`. `kubectl edit` changes are
+  reverted within about three minutes, so commit and push instead.
+- Argo CD reads GitHub, not your laptop. Push before you expect a deploy.
+- The repo and branch (`mega-project`) are hard-coded in 14 files under
+  `gitops/argocd/`. If you fork, follow `Deploy.md` section 0.3.
+- Platform pieces are an app-of-apps (`gitops/argocd/platform/`): External
+  Secrets, cert-manager, the observability stack and Ollama.
+
+### Observability
+
+The browser, backend and ai-service send OTLP to an OpenTelemetry Collector
+(agent plus gateway), which feeds Tempo (traces), Loki (logs) and Prometheus
+(metrics). Grafana sits on top (`admin` / `devboard`):
+
+```bash
+kubectl -n observability port-forward svc/observability-grafana 3000:80
+```
+
+A trace starts in the browser and continues through the Gateway, the Go backend
+and Postgres. Chapters 11-13 walk through it.
+
+### Infrastructure and cost
+
+Terraform builds the VPC, EKS 1.34 with three `t3.large` nodes, IAM, Pod Identity
+and Secrets Manager, with remote state in S3, and installs Argo CD. See
+[`gitops/README.md`](gitops/README.md) for the full cost table. The biggest lever
+is `node_desired_size = 2` in `terraform/terraform.tfvars`, which saves about
+$61 a month if you run only one DevBoard stack.
+
+### Teardown
+
+Order matters: stop Argo CD, delete the namespaces, confirm no load balancers or
+volumes remain, then `terraform destroy`, then the state bucket. Argo CD
+finalizers, orphaned ELBs and security groups, and PVC volumes are what stall or
+survive a destroy. Follow [`gitops/15-cleanup.md`](gitops/15-cleanup.md).
+
+### Troubleshooting
+
+`Deploy.md` section 16 covers `ImagePullBackOff`, Argo CD `ComparisonError`, a
+Gateway with no address, stuck certificates, and a PVC stuck `Pending`. For local
+runs:
+
+| Symptom | Likely cause |
+| --- | --- |
+| `401 Unauthorized` from `dhi.io` during build | an old `.env` without the image variables; run `make setup` |
+| "Port ... is already in use" | another process on 8080, 8081 or 5432; free it or change the port in `.env` |
+| `/api/ai/*` returns 502 | you started with `make up`; use `make up-ai` |
+| Blank page or 502 right after start | services still starting; `make up` waits, plain `docker compose up` does not |
+
+### Deliberately broken (teaching material)
+
+- `ai_service_requests_total` increments before the response streams, so it
+  reports `200` forever and can never see a failure (chapter 12).
+- The `/api/projects` trace has a small unexplained gap (chapter 13).
+
+### Recent changes
+
+- **Local parity:** `docker compose` now runs the AI assistant (`--profile ai`)
+  behind an nginx gateway that mirrors the Envoy routes. `make up` waits for
+  health, refreshes `.env` and checks Docker and ports first.
+- **OpenTelemetry end to end:** browser tracing, explicit Go tracing, and
+  zero-code auto-instrumentation for Python, into Tempo, Loki and Prometheus.
+- **Pure GitOps delivery:** CI builds SHA-tagged images and commits the tags
+  back; Argo CD does the deploy. CI no longer touches the cluster.
+- **Gateway API:** Envoy Gateway replaces an ingress controller, with
+  cert-manager for TLS.
+- **Secretless AWS access:** EKS Pod Identity instead of IRSA or access keys.
+- **Self-hosted AI:** Ollama in-cluster (or in Compose) behind a Python
+  streaming service, so no API key is needed.
+- **Supply chain:** hardened base images, hashed Python lockfile, Gitleaks,
+  Trivy, govulncheck and Dependabot across every ecosystem.
 
 ---
 

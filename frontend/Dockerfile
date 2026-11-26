@@ -1,4 +1,8 @@
-FROM dhi.io/node:26-dev AS build
+# Override these for local builds without a dhi.io login (see .env.example).
+ARG NODE_BUILD_IMAGE=dhi.io/node:26-dev
+ARG NODE_RUNTIME_IMAGE=dhi.io/node:26
+
+FROM ${NODE_BUILD_IMAGE} AS build
 
 WORKDIR /app
 
@@ -21,7 +25,7 @@ ENV VITE_OTEL_ENABLED=$VITE_OTEL_ENABLED \
 
 RUN npm run build
 
-FROM dhi.io/node:26
+FROM ${NODE_RUNTIME_IMAGE}
 
 WORKDIR /app
 

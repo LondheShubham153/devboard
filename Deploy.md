@@ -18,6 +18,11 @@ your browser         ─▶  https://devboard.trainwithshubham.com
 
 ---
 
+> **Want this without typing the commands?** `make cluster-up` runs sections 1-11
+> for you (state bucket, cluster, database password, Argo CD rewire, platform, app
+> and the AI check), `make cluster-https` does section 12, and `make cluster-down`
+> does section 15. See the README. This runbook explains what they do.
+
 ## 0. Before you start
 
 ### 0.1 Tools

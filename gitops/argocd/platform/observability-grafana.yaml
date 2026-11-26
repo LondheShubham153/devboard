@@ -17,7 +17,7 @@ spec:
         valueFiles:
           - $values/gitops/observability/grafana-values.yaml
 
-    - repoURL: https://github.com/LondheShubham153/devboard.git
+    - repoURL: https://github.com/chiragpuniyanii/devboard.git
       targetRevision: mega-project
       ref: values
 

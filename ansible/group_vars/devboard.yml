@@ -1,7 +1,7 @@
 ---
 # Every setting lives here, so all four playbooks read the same values.
 
-aws_region: us-west-2
+aws_region: us-east-1
 
 # The user you SSH in as. Ubuntu AMIs use `ubuntu`.
 login_user: ubuntu
