@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REGION="${REGION:-us-west-2}"
+REGION="${REGION:-us-east-1}"
 CLUSTER="${CLUSTER:-devboard}"
 EG_VERSION="${EG_VERSION:-v1.2.1}"
 

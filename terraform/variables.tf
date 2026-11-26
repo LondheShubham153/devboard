@@ -1,7 +1,7 @@
 variable "region" {
   description = "AWS region for the cluster. Changing this is a five-place edit — see gitops/01-prerequisites.md."
   type        = string
-  default     = "us-west-2"
+  default     = "us-east-1"
 }
 
 variable "cluster_name" {

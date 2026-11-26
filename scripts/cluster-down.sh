@@ -14,7 +14,7 @@ cd "$(dirname "$0")/.."
 # shellcheck source=scripts/lib.sh
 source scripts/lib.sh
 
-REGION="${REGION:-us-west-2}"
+REGION="${REGION:-us-east-1}"
 CLUSTER="${CLUSTER:-devboard}"
 KEEP_STATE="${KEEP_STATE:-0}"
 export REGION CLUSTER

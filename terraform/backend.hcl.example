@@ -1,8 +1,8 @@
 # Generate: terraform -chdir=bootstrap output -raw backend_hcl > backend.hcl
 
-bucket = "devboard-tfstate-<your-account-id>-us-west-2"
+bucket = "devboard-tfstate-<your-account-id>-us-east-1"
 key    = "devboard/mega-project/terraform.tfstate"
-region = "us-west-2"
+region = "us-east-1"
 
 encrypt = true
 

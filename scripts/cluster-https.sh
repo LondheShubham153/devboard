@@ -12,7 +12,7 @@ cd "$(dirname "$0")/.."
 # shellcheck source=scripts/lib.sh
 source scripts/lib.sh
 
-REGION="${REGION:-us-west-2}"
+REGION="${REGION:-us-east-1}"
 CLUSTER="${CLUSTER:-devboard}"
 ISSUER="${ISSUER:-prod}"
 DNS_WAIT="${DNS_WAIT:-1800}"

@@ -1,7 +1,7 @@
 variable "region" {
   description = "AWS region for the state bucket. Keep this the same as the cluster's region (var.region in ../variables.tf)."
   type        = string
-  default     = "us-west-2"
+  default     = "us-east-1"
 }
 
 variable "bucket_name" {

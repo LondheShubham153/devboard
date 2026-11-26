@@ -2,14 +2,14 @@
 # One command from an empty AWS account to a running DevBoard on EKS.
 # Idempotent: safe to re-run after a failure. See `make cluster-up`.
 #
-#   REGION=us-west-2 CLUSTER=devboard BRANCH=<git branch> HTTPS=1 ./scripts/cluster-up.sh
+#   REGION=us-east-1 CLUSTER=devboard BRANCH=<git branch> HTTPS=1 ./scripts/cluster-up.sh
 #   DRY_RUN=1 ./scripts/cluster-up.sh     # print what would change, change nothing
 set -euo pipefail
 cd "$(dirname "$0")/.."
 # shellcheck source=scripts/lib.sh
 source scripts/lib.sh
 
-REGION="${REGION:-us-west-2}"
+REGION="${REGION:-us-east-1}"
 CLUSTER="${CLUSTER:-devboard}"
 BRANCH="${BRANCH:-$(git rev-parse --abbrev-ref HEAD)}"
 HTTPS="${HTTPS:-0}"          # 1 = also set up DNS and a Let's Encrypt certificate
