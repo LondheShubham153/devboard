@@ -3,7 +3,7 @@ set -euo pipefail
 
 REGION="${REGION:-us-east-1}"
 CLUSTER="${CLUSTER:-devboard}"
-EG_VERSION="${EG_VERSION:-v1.2.1}"
+EG_VERSION="${EG_VERSION:-v1.9.4}"
 
 cd "$(dirname "$0")/.."
 
